@@ -279,10 +279,6 @@ commander
     generate();
   });
 
-commander.command('testing').action(() => {
-  logRejection(['Rejected!', 'Personal information']);
-});
-
 commander
   .command('*')
   .action(() => {
