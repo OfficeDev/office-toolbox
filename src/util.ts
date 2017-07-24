@@ -27,7 +27,7 @@ export const applicationProperties = {
       webExtensionPath: 'word/webextensions/webextension.xml',
       templateName: 'DocumentWithTaskPane.docx'
     },
-    sideloadingDirectory: path.join(os.homedir(), 'Library/Containers/com.microsoft.Word/wef')
+    sideloadingDirectory: path.join(os.homedir(), 'Library/Containers/com.microsoft.Word/Data/Documents/wef')
   },
   excel : {
     TaskPaneApp : {
@@ -38,7 +38,7 @@ export const applicationProperties = {
       webExtensionPath : 'xl/webextensions/webextension.xml',
       templateName: 'BookWithContent.xlsx'
     },
-    sideloadingDirectory : path.join(os.homedir(), 'Library/Containers/com.microsoft.Excel/wef')
+    sideloadingDirectory : path.join(os.homedir(), 'Library/Containers/com.microsoft.Excel/Data/Documents/wef')
   },
   powerpoint : {
     TaskPaneApp : {
@@ -49,7 +49,7 @@ export const applicationProperties = {
       webExtensionPath : 'ppt/slides/udata/data.xml',
       templateName : 'PresentationWithContent.pptx'
     },
-    sideloadingDirectory : path.join(os.homedir(), 'Library/Containers/com.microsoft.Powerpoint/wef')
+    sideloadingDirectory : path.join(os.homedir(), 'Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef')
   }
 };
 
@@ -87,18 +87,16 @@ function addManifest(application: string, manifestPath: string) : Promise<any> {
       addManifestToSideloadingDirectory(application, manifestPath);
 }
 
-function getAllManifests () : Promise<Array<string>> {
+async function getAllManifests () : Promise<Array<string>> {
   if (process.platform === 'win32') {
     return getManifestsFromRegistry();
   }
   else {
-    return new Promise(async (resolve, reject) => {
-      let manifests = [];
-      for (const application of Object.keys(applicationProperties)) {
-        manifests = manifests.concat(await getManifests(application));
-      }
-      resolve(manifests);
-    });
+    let manifests = [];
+    for (const application of Object.keys(applicationProperties)) {
+      manifests = manifests.concat(await getManifests(application));
+    }
+    return Promise.resolve(manifests);
   }
 }
 

@@ -13,7 +13,7 @@ import * as util from './util';
 
 function logRejection (err) {
   // When the error might contain personally identifiable information, only track the generic part.
-  if (err instanceof Array && err.length > 0) {
+  if (err instanceof Array && err.length) {
     util.appInsights.trackException(err[0]);
     for (let message of err) {
       console.log(`${chalk.red(message)}`);
@@ -61,16 +61,14 @@ async function promptForCommand () {
 }
 
 function promptForApplication () : Promise<string> {
-  return new Promise((resolve, reject) => {
-    const question = {
-      name: 'application',
-      type: 'list',
-      message: 'Which application are you targeting?',
-      choices: ['Word', 'Excel', 'PowerPoint']
-    };
-    inquirer.prompt(question).then((answer) => {
-      resolve(answer['application'].toLowerCase());
-    });
+  const question = {
+    name: 'application',
+    type: 'list',
+    message: 'Which application are you targeting?',
+    choices: ['Word', 'Excel', 'PowerPoint']
+  };
+  return inquirer.prompt(question).then((answer) => {
+    return Promise.resolve(answer['application'].toLowerCase());
   });
 }
 
@@ -92,65 +90,57 @@ function checkAndPromptForPath (application: string, manifestPath: string) : Pro
 }
 
 function promptForPathOrChoose () : Promise<string> {
-  return new Promise((resolve, reject) => {
-    const question = {
-      name: 'pathorchoose',
-      type: 'list',
-      message: 'Would you like to specify the path to a developer manifest or choose one that you have already registered?',
-      choices: ['Specify the path to a developer manifest',
-                'Choose a registered developer manifest']
-    };
-    inquirer.prompt(question).then((answer) => {
-      switch (question.choices.indexOf(answer.pathorchoose)) {
-        case 0:
-          resolve('path');
-        case 1:
-          resolve('choose');
-      }
-    });
+  const question = {
+    name: 'pathorchoose',
+    type: 'list',
+    message: 'Would you like to specify the path to a developer manifest or choose one that you have already registered?',
+    choices: ['Specify the path to a developer manifest',
+              'Choose a registered developer manifest']
+  };
+  return inquirer.prompt(question).then((answer) => {
+    switch (question.choices.indexOf(answer.pathorchoose)) {
+      case 0:
+        return Promise.resolve('path');
+      case 1:
+        return Promise.resolve('choose');
+    }
   });
 }
 
-function promptForManifestPathFromList (application: string) : Promise<string> {
-  return new Promise(async (resolve, reject) => {
-    if (application == null && process.platform !== 'win32') {
-      application = await promptForApplication();
-    }
-    const manifestPaths = await util.getManifests(application);
-    const question = {
-      name: 'manifestPath',
-      type: 'list',
-      message: 'Choose a manifest:',
-      choices: []
-    };
-    for (const manifestPath of manifestPaths) {
-      question.choices.push(manifestPath);
-    }
-    if (question.choices.length === 0) {
-      return reject("There are no manifests registered to choose from.");
-    }
-    else {
-      inquirer.prompt(question).then((answers) => {
-        resolve(answers['manifestPath']);
-      });
-    }
-  });
+async function promptForManifestPathFromList (application: string) : Promise<string> {
+  if (application == null && process.platform !== 'win32') {
+    application = await promptForApplication();
+  }
+  const manifestPaths = await util.getManifests(application);
+  const question = {
+    name: 'manifestPath',
+    type: 'list',
+    message: 'Choose a manifest:',
+    choices: []
+  };
+  question.choices = [...manifestPaths];
+  if (!question.choices.length) {
+    return Promise.reject("There are no manifests registered to choose from.");
+  }
+  else {
+    return inquirer.prompt(question).then((answers) => {
+      return Promise.resolve(answers['manifestPath']);
+    });
+  }
 }
 
 function promptForManifestPath () : Promise<string> {
-  return new Promise((resolve, reject) => {
-    const question = {
-      name: 'manifestPath',
-      type: 'input',
-      message: 'Specify the path to the XML manifest file:',
-    };
-    inquirer.prompt(question).then((answers) => {
-      let manifestPath = answers['manifestPath'];
-      if (manifestPath.charAt(0) === '"' && manifestPath.charAt(manifestPath.length - 1) === '"') {
-        manifestPath = manifestPath.substr(1, manifestPath.length - 2);
-      }
-      resolve(manifestPath);
-    });
+  const question = {
+    name: 'manifestPath',
+    type: 'input',
+    message: 'Specify the path to the XML manifest file:',
+  };
+  return inquirer.prompt(question).then((answers) => {
+    let manifestPath = answers['manifestPath'];
+    if (manifestPath.charAt(0) === '"' && manifestPath.charAt(manifestPath.length - 1) === '"') {
+      manifestPath = manifestPath.substr(1, manifestPath.length - 2);
+    }
+    return Promise.resolve(manifestPath);
   });
 }
 
@@ -158,7 +148,7 @@ function promptForManifestPath () : Promise<string> {
 async function list() {
   try {
     const manifestInformation = await util.list();
-    if (manifestInformation == null || (manifestInformation).length === 0) {
+    if (manifestInformation == null || !manifestInformation.length) {
       console.log('No manifests were found.');
       return;
     }
@@ -218,7 +208,7 @@ async function validate(manifestPath: string) {
   }
 }
 
-function generate() {
+function generate() : Promise<any> {
   return new Promise((resolve, reject) => {
     try {
       util.appInsights.trackEvent('generate');
