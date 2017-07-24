@@ -117,10 +117,14 @@ function addManifestToSideloadingDirectory (application: string, manifestPath : 
     fs.ensureDirSync(sideloadingDirectory);
 
     const sideloadingManifestPath = path.join(sideloadingDirectory, path.basename(manifestPath));
-    if (fs.existsSync(sideloadingManifestPath) && fs.realpathSync(sideloadingManifestPath) !== manifestPath) {
-      return reject(['Remove the manifest with matching name before adding this one. ', fs.realpathSync(sideloadingManifestPath)]);
+    if (fs.existsSync(sideloadingManifestPath)) {
+      const stat = fs.statSync(manifestPath);
+      const sideloadingStat = fs.statSync(sideloadingManifestPath);
+      if (stat.ino !== sideloadingStat.ino && stat.dev !== sideloadingStat.dev) {
+        return reject(['Remove the manifest with matching name before adding this one. ', fs.realpathSync(sideloadingManifestPath)]);
+      }
     }
-    fs.ensureSymlinkSync(manifestPath, sideloadingManifestPath);
+    fs.ensureLinkSync(manifestPath, sideloadingManifestPath);
     resolve();
   });
 }
