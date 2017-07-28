@@ -7,8 +7,9 @@
 
 import * as chalk from 'chalk';
 import * as commander from 'commander';
-import * as fs from 'fs-extra';
 import * as inquirer from 'inquirer';
+import * as yeoman from 'yeoman-environment';
+
 import * as util from './util';
 
 function logRejection (err) {
@@ -16,12 +17,12 @@ function logRejection (err) {
   if (err instanceof Array && err.length) {
     util.appInsights.trackException(err[0]);
     for (let message of err) {
-      console.log(`${chalk.red(message)}`);
+      console.log(chalk.red(message));
     }
   }
   else {
     util.appInsights.trackException(err[0]);
-    console.log(`${chalk.red(err)}`);
+    console.log(chalk.red(err));
   }
 }
 
@@ -75,7 +76,7 @@ function promptForApplication () : Promise<string> {
 function checkAndPromptForPath (application: string, manifestPath: string) : Promise<string> {
   return new Promise(async (resolve, reject) => {
     try {
-      if (manifestPath == null) {
+      if (!manifestPath) {
         console.log('The path must be specified for the manifest.');
         const useManifestPath = (await promptForPathOrChoose() === 'path');
         manifestPath = useManifestPath ?
@@ -108,7 +109,7 @@ function promptForPathOrChoose () : Promise<string> {
 }
 
 async function promptForManifestPathFromList (application: string) : Promise<string> {
-  if (application == null && process.platform !== 'win32') {
+  if (!application && process.platform !== 'win32') {
     application = await promptForApplication();
   }
   const manifestPaths = await util.getManifests(application);
@@ -148,13 +149,13 @@ function promptForManifestPath () : Promise<string> {
 async function list() {
   try {
     const manifestInformation = await util.list();
-    if (manifestInformation == null || !manifestInformation.length) {
+    if (!manifestInformation || !manifestInformation.length) {
       console.log('No manifests were found.');
       return;
     }
     for (const [id, manifestPath, application] of (manifestInformation)) {
-      let manifestString = (application == null ) ? '' : (application + ' ');
-      manifestString += (id == null) ? 'unknown                              ' : id + ' ';
+      let manifestString = (!application) ? '' : (application + ' ');
+      manifestString += (!id) ? 'unknown                              ' : id + ' ';
       manifestString += manifestPath;
       console.log(manifestString);
     }
@@ -166,7 +167,7 @@ async function list() {
 
 async function sideload(application: string, manifestPath: string) {
   try {
-    if (application == null || Object.keys(util.applicationProperties).indexOf(application) < 0) {
+    if (!application || Object.keys(util.applicationProperties).indexOf(application) < 0) {
       console.log('A valid application must be specified.');
       application = await promptForApplication();
     }
@@ -183,12 +184,12 @@ async function remove(application: string, manifestPath: string) {
     if (process.platform === 'win32') {
       application = null;
     }
-    else if ((application == null || Object.keys(util.applicationProperties).indexOf(application) < 0)) {
+    else if ((!application || Object.keys(util.applicationProperties).indexOf(application) < 0)) {
       console.log('A valid application must be specified.');
       application = await promptForApplication();
     }
 
-    if (manifestPath == null) {
+    if (!manifestPath) {
       manifestPath = await promptForManifestPathFromList(application);
     }
 
@@ -212,7 +213,6 @@ function generate() : Promise<any> {
   return new Promise((resolve, reject) => {
     try {
       util.appInsights.trackEvent('generate');
-      const yeoman = require('yeoman-environment');
       const env = yeoman.createEnv();
       env.lookup(() => {
         env.run('office');
@@ -243,7 +243,7 @@ commander
   .option('-a, --application <application>', 'The Office application. Word, Excel, and PowerPoint are currently supported.')
   .option('-m, --manifest_path <manifest_path>', 'The path of the manifest file to sideload and launch.')
   .action(async (options) => {
-    let application = (options.application == null ? null : options.application.toLowerCase());
+    let application = (!options.application ? null : options.application.toLowerCase());
     sideload(options.application, options.manifest_path);
   });
 
@@ -252,7 +252,7 @@ commander
   .option('-a, --application <application>', 'The Office application. Word, PowerPoint, and Excel are currently supported. This parameter is ignored on Windows.')
   .option('-m, --manifest_path <manifest_path>', 'The path of the manifest file to remove.')
   .action(async (options) => {
-    let application = (options.application == null ? null : options.application.toLowerCase());
+    let application = (!options.application ? null : options.application.toLowerCase());
     remove(options.application, options.manifest_path);
   });
 

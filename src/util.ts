@@ -8,11 +8,11 @@ import * as chalk from 'chalk';
 import * as fs from 'fs-extra';
 import * as jszip from 'jszip';
 import * as junk from 'junk';
+import * as officeAddinValidator from 'office-addin-validator';
 import * as open from 'open';
 import * as os from 'os';
 import * as path from 'path';
 import * as shell from 'node-powershell';
-import * as officeAddinValidator from 'office-addin-validator';
 import * as xml2js from 'xml2js';
 
 export const appInsights = ai.getClient('7695b3c1-32c5-4458-99d6-5d0e3208c9c2');
@@ -133,7 +133,7 @@ function getManifestsFromSideloadingDirectory (inputApplication : string) : Prom
   return new Promise((resolve, reject) => {
     let manifestPaths = [];
     for (let application of Object.keys(applicationProperties)) {
-      if (inputApplication == null || application === inputApplication) {
+      if (!inputApplication || application === inputApplication) {
         const sideloadingDirectory = applicationProperties[application].sideloadingDirectory;
         if (!fs.existsSync(sideloadingDirectory)) {
           continue;
@@ -153,7 +153,7 @@ function removeManifestFromSideloadingDirectory (inputApplication: string, manif
     try {
       let manifestRemoved = false;
       for (let application of Object.keys(applicationProperties)) {
-        if (inputApplication == null || application === inputApplication) {
+        if (!inputApplication || application === inputApplication) {
           const sideloadingDirectory = applicationProperties[application].sideloadingDirectory;
           if (!fs.existsSync(sideloadingDirectory)) {
             continue;
@@ -162,7 +162,7 @@ function removeManifestFromSideloadingDirectory (inputApplication: string, manif
           fs.readdirSync(sideloadingDirectory).forEach(manifestName => {
             const realManifestPath = (fs.realpathSync(path.join(sideloadingDirectory, manifestName)));
             if (manifestPathToRemove === realManifestPath) {
-              console.log('Removing ' + manifestPathToRemove + ' for application ' + application);
+              console.log(`Removing ${manifestPathToRemove} for application ${application}`);
               fs.unlinkSync(manifestPathToRemove);
               manifestRemoved = true;
             }
@@ -224,7 +224,7 @@ function getManifestsFromRegistry () : Promise<Array<string>> {
   return new Promise(async(resolve, reject) => {
     try {
       const registryOutput = await querySideloadingRegistry(['Get-ItemProperty -LiteralPath $RegistryPath | ConvertTo-Json -Compress']);
-      if (registryOutput == null || registryOutput.indexOf('{') === -1) {
+      if (!registryOutput || registryOutput.indexOf('{') === -1) {
         resolve([]);
       }
       const registryJSON = JSON.parse(registryOutput);
@@ -244,12 +244,12 @@ function getManifestsFromRegistry () : Promise<Array<string>> {
 }
 
 function removeManifestFromRegistry (manifestPath : string) : Promise<any> {
-  if (manifestPath == null) {
+  if (!manifestPath) {
     return new Promise((resolve, reject) => {
       return reject('No manifest was specified');
     });
   }
-  console.log('Removing ' + manifestPath);
+  console.log(`Removing ${manifestPath}`);
   return querySideloadingRegistry(['Remove-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestPath + '" -ErrorAction SilentlyContinue']);
 }
 
@@ -275,7 +275,7 @@ function sideloadManifest (application: string, manifestPath : string) : Promise
           throw result;
         }
       } catch (err) {
-        console.log(`${chalk.red('Manifest validation was not successful. It may not be possible to sideload this manifest. Continuing anyway.')}`);
+        console.log(chalk.red('Manifest validation was not successful. It may not be possible to sideload this manifest. Continuing anyway.'));
       }
 
       const [parsedType, parsedGuid, parsedVersion] = await parseManifest(manifestPath);
@@ -283,7 +283,7 @@ function sideloadManifest (application: string, manifestPath : string) : Promise
       const templateFile = await generateTemplateFile(application, parsedType, parsedGuid, parsedVersion);
 
       appInsights.trackEvent('open', { guid: parsedGuid, version: parsedVersion });
-      console.log('Opening file ' + templateFile);
+      console.log(`Opening file ${templateFile}`);
       open(templateFile);
       resolve();
     }
@@ -358,7 +358,7 @@ function parseManifest (manifestPath: string) : Promise<[string, string, string]
         return reject(['Failed to read the manifest file: ', manifestPath]);
       });
       parser.parseString(manifestBuffer, (err, manifestXml) => {
-        if (manifestXml == null || typeof(manifestXml) !== 'object') {
+        if (!manifestXml || typeof(manifestXml) !== 'object') {
           reject(['Failed to parse the manifest file: ', manifestPath]);
         }
         else if (!('OfficeApp' in manifestXml)) {
@@ -435,7 +435,7 @@ function generateTemplateFile (application: string, type: string, id : string, v
         i++;
       }
 
-      console.log('Generating file ' + templatePath);
+      console.log(`Generating file ${templatePath}`);
       // Read the template
       const templateBuffer = await fs.readFile(path.join(__filename, '..', '..', 'templates', defaultTemplateName));
       const zip = await jszip.loadAsync(templateBuffer);
