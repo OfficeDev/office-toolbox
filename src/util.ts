@@ -275,7 +275,7 @@ function sideloadManifest (application: string, manifestPath : string) : Promise
           throw result;
         }
       } catch (err) {
-        console.log(chalk.red('Manifest validation was not successful. It may not be possible to sideload this manifest. Continuing anyway.'));
+        console.log(chalk.red('Manifest validation was not successful. It may not be possible to sideload this manifest.'));
       }
 
       const [parsedType, parsedGuid, parsedVersion] = await parseManifest(manifestPath);
