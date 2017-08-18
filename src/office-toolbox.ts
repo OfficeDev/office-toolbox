@@ -76,15 +76,15 @@ async function promptForApplication(): Promise<string> {
 }
 
 async function checkAndPromptForPath(application: string, manifestPath: string): Promise<string> {
-  if (manifestPath) return manifestPath;
+  if (manifestPath) { return manifestPath; }
   else {
     console.log('The path must be specified for the manifest.');
-    
+
     return promptForPathOrChoose().then((manifestSelectionMethod) => {
-      if (manifestSelectionMethod === 'path') return promptForManifestPath();
-      else if (manifestSelectionMethod === 'search') return promptForManifestFromCurrentDirectory();
-      else if (manifestSelectionMethod === 'registered') return promptForManifestFromListOfRegisteredManifests(application);
-      else throw('An invalid method of specifying the manifest was selected.');
+      if (manifestSelectionMethod === 'path') { return promptForManifestPath(); }
+      else if (manifestSelectionMethod === 'search') { return promptForManifestFromCurrentDirectory(); }
+      else if (manifestSelectionMethod === 'registered') { return promptForManifestFromListOfRegisteredManifests(application); }
+      else { throw('An invalid method of specifying the manifest was selected.'); }
     });
   }
 }
@@ -111,14 +111,14 @@ async function promptForManifestFromListOfRegisteredManifests(application: strin
   if (!application && process.platform !== 'win32') {
     application = await promptForApplication();
   }
-  
+
   const manifestPaths = await util.getManifests(application);
   return promptForManifestPathFromList(manifestPaths);
 }
 
 async function promptForManifestFromCurrentDirectory(): Promise<string> {
   const cwd = process.cwd();
-  console.log('Searching for manifests in ' + cwd + '. This may take a while.');
+  console.log('Searching for XML files in ' + cwd + '. This may take a while.');
 
   return getManifestsInDirectory(cwd, []).then((manifestPathsFoo) => {
     return promptForManifestPathFromList(manifestPathsFoo);
@@ -132,9 +132,9 @@ async function promptForManifestPathFromList(manifestPaths: string[]): Promise<s
     message: 'Choose a manifest:',
     choices: []
   };
-  
+
   question.choices = [...manifestPaths];
-  
+
   if (!question.choices.length) {
     return Promise.reject('There are no registered manifests to choose from.');
   }
@@ -149,13 +149,13 @@ async function promptForManifestPathFromList(manifestPaths: string[]): Promise<s
 function getManifestsInDirectory(directory: string, manifests: string[]): Promise<string[]> {
   return new Promise (async (resolve, reject) => {
     fs.readdir(directory, (err, files) => {
-      if (err) resolve(manifests);
-      
+      if (err) { resolve(manifests); }
+
       let promises = [];
-      
+
       files.forEach(async (file) => {
         const fullPath = path.join(directory, file);
-        
+
         if (fs.lstatSync(fullPath).isDirectory()) {
           promises.push(getManifestsInDirectory(fullPath, manifests));
         }
@@ -163,9 +163,9 @@ function getManifestsInDirectory(directory: string, manifests: string[]): Promis
           promises.push(fullPath);
         }
       });
-      
+
       Promise.all(promises).then(values => {
-        resolve ([...manifests, ...values]);
+        resolve (Array.prototype.concat.apply(manifests, values));
       });
     });
   });
@@ -177,14 +177,14 @@ function promptForManifestPath(): Promise<string> {
     type: 'input',
     message: 'Specify the path to the XML manifest file:',
   };
-  
+
   return inquirer.prompt(question).then((answers) => {
     let manifestPath = answers['manifestPath'];
-    
+
     if (manifestPath.charAt(0) === '"' && manifestPath.charAt(manifestPath.length - 1) === '"') {
       manifestPath = manifestPath.substr(1, manifestPath.length - 2);
     }
-    
+
     return Promise.resolve(manifestPath);
   });
 }
@@ -193,17 +193,17 @@ function promptForManifestPath(): Promise<string> {
 async function list() {
   try {
     const manifestInformation = await util.list();
-    
+
     if (!manifestInformation || !manifestInformation.length) {
       console.log('No manifests were found.');
       return;
     }
-    
+
     for (const [id, manifestPath, application] of (manifestInformation)) {
       let manifestString = (!application) ? '' : (application + ' ');
       manifestString += (!id) ? 'unknown                              ' : id + ' ';
       manifestString += manifestPath;
-      
+
       console.log(manifestString);
     }
   }
