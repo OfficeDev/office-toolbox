@@ -273,7 +273,7 @@ function isGuid (text: string): boolean {
 function sideloadManifest(application: string, manifestPath: string): Promise<any> {
   return new Promise(async (resolve, reject) => {
     try {
-      if (fs.existsSync(manifestPath)) {
+      if (fs.existsSync(manifestPath) && fs.lstatSync(manifestPath).isFile()) {
         manifestPath = fs.realpathSync(manifestPath);
       }
       else {

@@ -291,7 +291,7 @@ commander
   .option('-m, --manifest_path <manifest_path>', 'The path of the manifest file to sideload and launch.')
   .action(async (options) => {
     let application = (!options.application ? null : options.application.toLowerCase());
-    sideload(options.application, options.manifest_path);
+    sideload(application, options.manifest_path);
   });
 
 commander
@@ -300,7 +300,7 @@ commander
   .option('-m, --manifest_path <manifest_path>', 'The path of the manifest file to remove.')
   .action(async (options) => {
     let application = (!options.application ? null : options.application.toLowerCase());
-    remove(options.application, options.manifest_path);
+    remove(application, options.manifest_path);
   });
 
 commander
