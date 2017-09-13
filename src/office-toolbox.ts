@@ -82,7 +82,7 @@ async function checkAndPromptForPath(application: string, manifestPath: string):
 
     return promptForPathOrChoose().then((manifestSelectionMethod) => {
       if (manifestSelectionMethod === 'path') { return promptForManifestPath(); }
-      else if (manifestSelectionMethod === 'search') { return promptForManifestFromCurrentDirectory(); }
+      else if (manifestSelectionMethod === 'browse') { return promptForManifestFromCurrentDirectory(); }
       else if (manifestSelectionMethod === 'registered') { return promptForManifestFromListOfRegisteredManifests(application); }
       else { throw('An invalid method of specifying the manifest was selected.'); }
     });
@@ -94,14 +94,14 @@ async function promptForPathOrChoose(): Promise<string> {
     name: 'pathorchoose',
     type: 'list',
     message: 'Would you like to specify the path to a developer manifest or choose one that you have already registered?',
-    choices: ['Specify the path to a developer manifest',
-              'Choose a developer manifest from inside the current working directory',
+    choices: ['Browse for a developer manifest from the current directory',
+              'Specify the path to a developer manifest',
               'Choose a registered developer manifest']
   };
   return inquirer.prompt(question).then((answer) => {
     switch (question.choices.indexOf(answer.pathorchoose)) {
-      case 0: return Promise.resolve('path');
-      case 1: return Promise.resolve('search');
+      case 0: return Promise.resolve('browse');
+      case 1: return Promise.resolve('path');
       case 2: return Promise.resolve('registered');
     }
   });
@@ -113,23 +113,30 @@ async function promptForManifestFromListOfRegisteredManifests(application: strin
   }
 
   const manifestPaths = await util.getManifests(application);
-  return promptForManifestPathFromList(manifestPaths);
+  return promptForManifestPathFromList(manifestPaths, 'Choose a manifest:');
 }
 
-async function promptForManifestFromCurrentDirectory(): Promise<string> {
-  const cwd = process.cwd();
-  console.log('Searching for XML files in ' + cwd + '. This may take a while.');
+function promptForManifestFromCurrentDirectory(): Promise<string> {
+  return new Promise (async (resolve, reject) => {
+    const cwd = process.cwd();
 
-  return getManifestsInDirectory(cwd, []).then((manifestPathsFoo) => {
-    return promptForManifestPathFromList(manifestPathsFoo);
+    let manifestPath = cwd;
+    while (fs.lstatSync(manifestPath).isDirectory()) {
+      manifestPath = fs.realpathSync(manifestPath);
+      const paths = await getItemsInDirectory(manifestPath);
+      const choice = await promptForManifestPathFromList(paths, manifestPath);
+      manifestPath = path.join(manifestPath, choice);
+    }
+
+    resolve(manifestPath);
   });
 }
 
-async function promptForManifestPathFromList(manifestPaths: string[]): Promise<string> {
+async function promptForManifestPathFromList(manifestPaths: string[], message: string): Promise<string> {
   const question = {
     name: 'manifestPath',
     type: 'list',
-    message: 'Choose a manifest:',
+    message: message,
     choices: []
   };
 
@@ -145,30 +152,35 @@ async function promptForManifestPathFromList(manifestPaths: string[]): Promise<s
   }
 }
 
-// Recursively searches under the current directory for any files with extension .xml
-function getManifestsInDirectory(directory: string, manifests: string[]): Promise<string[]> {
-  return new Promise (async (resolve, reject) => {
-    fs.readdir(directory, (err, files) => {
-      if (err) { resolve(manifests); }
+// Searches under the current directory for any files or extensions with extension .xml
+function getItemsInDirectory(directory: string): string[] {
+  let manifestPaths = [];
+  let dirPaths = [".."];
+  try {
+    const files = fs.readdirSync(directory);
+    files.forEach(async file => {
+      const fullPath = path.join(directory, file);
+      let stats;
+      try {
+        stats = fs.statSync(fullPath);
+      }
+      catch (e) {
+        // Do nothing
+      }
 
-      let promises = [];
-
-      files.forEach(async (file) => {
-        const fullPath = path.join(directory, file);
-
-        if (fs.lstatSync(fullPath).isDirectory()) {
-          promises.push(getManifestsInDirectory(fullPath, manifests));
-        }
-        else if (path.extname(file) === '.xml') {
-          promises.push(fullPath);
-        }
-      });
-
-      Promise.all(promises).then(values => {
-        resolve (Array.prototype.concat.apply(manifests, values));
-      });
+      if (stats && stats.isDirectory()) {
+        dirPaths.push(file);
+      }
+      else if (path.extname(fullPath) === '.xml') {
+        manifestPaths.push(file);
+      }
     });
-  });
+  }
+  catch (err) {
+    return null;
+  }
+
+  return [...manifestPaths, ...dirPaths];
 }
 
 function promptForManifestPath(): Promise<string> {
