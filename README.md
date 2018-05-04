@@ -53,7 +53,7 @@ $ office-toolbox sideload
 
 The tool validates the manifest against the online system. On Windows, the tool writes a registry key to HKEY\_CURRENT\_USER\Software\Microsoft\Office\16.0\WEF\Developer. On Mac, the tool creates a hard link in ~/Library/Containers/com.microsoft.Word/Data/Documents/wef to your manifest. The tool then generates a document, spreadsheet, or presentation containing your Office Add-in, which you can open every time you want to load your Add-in.
 
-Copyright (c) 2017 Microsoft Corporation. All rights reserved.
+Copyright (c) 2018 Microsoft Corporation. All rights reserved.
 
 This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information, see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
 
