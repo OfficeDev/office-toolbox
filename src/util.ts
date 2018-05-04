@@ -280,15 +280,6 @@ function sideloadManifest(application: string, manifestPath: string): Promise<an
         return reject(['The manifest to sideload could not be found: ', manifestPath]);
       }
 
-      try {
-        const result = await validateManifest(manifestPath);
-        if (result !== 'Passed') {
-          throw result;
-        }
-      } catch (err) {
-        console.log(chalk.red('Manifest validation was not successful. It may not be possible to sideload this manifest, but we\'ll try anyways...'));
-      }
-
       const [parsedType, parsedGuid, parsedVersion] = await parseManifest(manifestPath);
       await addManifest(application, manifestPath);
       const templateFile = await generateTemplateFile(application, parsedType, parsedGuid, parsedVersion);
