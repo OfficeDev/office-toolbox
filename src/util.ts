@@ -9,7 +9,7 @@ import * as fs from 'fs-extra';
 import * as jszip from 'jszip';
 import * as junk from 'junk';
 import * as officeAddinValidator from 'office-addin-validator';
-import * as open from 'open';
+import * as opn from 'opn';
 import * as os from 'os';
 import * as path from 'path';
 import * as shell from 'node-powershell';
@@ -286,7 +286,7 @@ function sideloadManifest(application: string, manifestPath: string): Promise<an
 
       appInsights.trackEvent('open', { guid: parsedGuid, version: parsedVersion });
       console.log(`Opening file ${templateFile}`);
-      open(templateFile);
+      opn(templateFile);
       resolve();
     }
     catch (err) {
