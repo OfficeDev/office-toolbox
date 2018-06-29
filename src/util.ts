@@ -50,6 +50,15 @@ export const applicationProperties = {
       templateName: 'PresentationWithContent.pptx'
     },
     sideloadingDirectory: path.join(os.homedir(), 'Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef')
+  },
+  outlook:{
+    documentationLink:"https://docs.microsoft.com/en-us/outlook/add-ins/sideload-outlook-add-ins-for-testing"
+  },
+  onenote:{
+    documentationLink:"https://docs.microsoft.com/en-us/office/dev/add-ins/onenote/onenote-add-ins-getting-started"
+  },
+  project:{
+    documentationLink:"https://docs.microsoft.com/en-us/office/dev/add-ins/project/project-add-ins"
   }
 };
 
