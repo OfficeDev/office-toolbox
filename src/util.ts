@@ -3,19 +3,18 @@
  * See LICENSE in the project root for license information.
  */
 
-import * as ai from 'applicationinsights';
-import * as chalk from 'chalk';
+import * as appInsights from 'applicationinsights';
 import * as fs from 'fs-extra';
 import * as jszip from 'jszip';
 import * as junk from 'junk';
+import * as shell from 'node-powershell';
 import * as officeAddinValidator from 'office-addin-validator';
 import * as opn from 'opn';
 import * as os from 'os';
 import * as path from 'path';
-import * as shell from 'node-powershell';
 import * as xml2js from 'xml2js';
 
-export const appInsights = ai.getClient('7695b3c1-32c5-4458-99d6-5d0e3208c9c2');
+export const appInsightsClient = new appInsights.TelemetryClient('7695b3c1-32c5-4458-99d6-5d0e3208c9c2');
 
 const office16RegistryPath = 'HKCU:\\Software\\Microsoft\\Office\\16.0';
 const wefFolder = '\\WEF';
@@ -55,22 +54,22 @@ export const applicationProperties = {
 
 // TOP-LEVEL COMMANDS //
 export function sideload(application: string, manifestPath: string): Promise<any> {
-  appInsights.trackEvent('sideload');
+  appInsightsClient.trackEvent({ name: 'sideload' });
   return sideloadManifest(application, manifestPath);
 }
 
 export function list(): Promise<Array<[string, string, string]>> {
-  appInsights.trackEvent('list');
+  appInsightsClient.trackEvent({ name: 'list'});
   return getAllIdsAndManifests();
 }
 
 export function remove(application: string, manifestPath: string): Promise<any> {
-  appInsights.trackEvent('remove');
+  appInsightsClient.trackEvent({ name: 'remove' });
   return removeManifest(application, manifestPath);
 }
 
 export function validate(manifestPath: string): Promise<string> {
-  appInsights.trackEvent('validate');
+  appInsightsClient.trackEvent({ name: 'validate' });
   return validateManifest(manifestPath);
 }
 
@@ -284,7 +283,7 @@ function sideloadManifest(application: string, manifestPath: string): Promise<an
       await addManifest(application, manifestPath);
       const templateFile = await generateTemplateFile(application, parsedType, parsedGuid, parsedVersion);
 
-      appInsights.trackEvent('open', { guid: parsedGuid, version: parsedVersion });
+      appInsightsClient.trackEvent({ name: 'open', properties: { guid: parsedGuid, version: parsedVersion }});
       console.log(`Opening file ${templateFile}`);
       opn(templateFile);
       resolve();
@@ -360,15 +359,18 @@ function parseManifest(manifestPath: string): Promise<[string, string, string]> 
   return new Promise(async (resolve, reject) => {
     try {
       const parser = new xml2js.Parser();
+      let manifestBuffer;
 
       // Parse the manifest and get the id and version
-      let manifestBuffer = await fs.readFile(manifestPath).catch((err) => {
+      try {
+        manifestBuffer = await fs.readFile(manifestPath);
+      } catch (err) {
         return reject(['Failed to read the manifest file: ', manifestPath]);
-      });
+      }
 
       parser.parseString(manifestBuffer, (err, manifestXml) => {
         if (!manifestXml || typeof(manifestXml) !== 'object') {
-          reject(['Failed to parse the manifest file: ', manifestPath]);
+          return reject(['Failed to parse the manifest file: ', manifestPath]);
         }
         else if (!('OfficeApp' in manifestXml)) {
           return reject(['OfficeApp missing in manifest file: ', manifestPath]);
@@ -452,7 +454,7 @@ function generateTemplateFile(application: string, type: string, id: string, ver
       const zip = await jszip.loadAsync(templateBuffer);
 
       // Replace the placeholder ID and version
-      let webExtensionXml = await zip.file(webExtensionPath).async("string");
+      let webExtensionXml = await zip.file(webExtensionPath).async("text");
       webExtensionXml = webExtensionXml.replace(/00000000-0000-0000-0000-000000000000/g, id);
       webExtensionXml = webExtensionXml.replace(/1.0.0.0/g, version);
       zip.file(webExtensionPath, webExtensionXml);
