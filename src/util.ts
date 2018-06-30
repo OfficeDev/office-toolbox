@@ -458,14 +458,14 @@ function generateTemplateFile(application: string, type: string, id: string, ver
 
       const defaultTemplateName = applicationProperties[application][type].templateName;
       const webExtensionPath = applicationProperties[application][type].webExtensionPath;
-      let templatePath = path.join(process.cwd(), defaultTemplateName);
-
-      let i = 0;
-      while (fs.existsSync(templatePath)) {
-        const [templateName, templateExtension] = defaultTemplateName.split('.');
-        templatePath = path.join(process.cwd(), templateName + i + '.' + templateExtension);
-        i++;
+      const extension = path.extname(defaultTemplateName);
+      const templatePath = path.join(os.tmpdir(), `${application} add-in ${id}${extension}`);
+  
+      if (fs.existsSync(templatePath)) { 
+        fs.removeSync(templatePath);
       }
+
+      fs.ensureDirSync(path.dirname(templatePath));
 
       console.log(`Generating file ${templatePath}`);
 
