@@ -17,6 +17,8 @@ import * as xml2js from 'xml2js';
 
 export const appInsights = ai.getClient('7695b3c1-32c5-4458-99d6-5d0e3208c9c2');
 
+appInsightsClient.config.maxBatchIntervalMs = 500;
+
 const office16RegistryPath = 'HKCU:\\Software\\Microsoft\\Office\\16.0';
 const wefFolder = '\\WEF';
 const developerFolder = '\\Developer';
@@ -286,7 +288,7 @@ function sideloadManifest(application: string, manifestPath: string): Promise<an
 
       appInsights.trackEvent('open', { guid: parsedGuid, version: parsedVersion });
       console.log(`Opening file ${templateFile}`);
-      opn(templateFile);
+      opn(templateFile, { wait: false});
       resolve();
     }
     catch (err) {
