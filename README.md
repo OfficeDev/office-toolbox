@@ -1,6 +1,6 @@
 # office-toolbox
 
-Office-Toolbox is a set of tools for creating, validating, and sideloading an Office Add-in. It is not (yet) a part of the official Office Add-in toolchain, but allows you to bypass the manual steps for sideloading add-ins. If you prefer to use the official Office toolchain, see our documentation on [getting started with Office Add-ins](https://dev.office.com/docs/add-ins/get-started/create-an-office-add-in-using-any-editor) and [how to sideload an add-in](https://dev.office.com/docs/add-ins/testing/create-a-network-shared-folder-catalog-for-task-pane-and-content-add-ins).
+Office-Toolbox is a set of tools for validating, and sideloading an Office Add-in. It is not (yet) a part of the official Office Add-in toolchain, but allows you to bypass the manual steps for sideloading add-ins. If you prefer to use the official Office toolchain, see our documentation on [getting started with Office Add-ins](https://dev.office.com/docs/add-ins/get-started/create-an-office-add-in-using-any-editor) and [how to sideload an add-in](https://dev.office.com/docs/add-ins/testing/create-a-network-shared-folder-catalog-for-task-pane-and-content-add-ins).
 
 ## Installation
 > **Important:** If this is the first time you're using this tool, first install [Node.js](https://nodejs.org). For developers on Mac, we recommend using [Node Version Manager](https://github.com/creationix/nvm) to install Node.js with the right permissions. When the installation completes, restart your console (or if you are using Windows, restart your machine) to ensure you use the updated system environment variables.
@@ -22,18 +22,6 @@ Alternatively, you can run the tool without arguments and it will prompt you for
 ```bash
 $ office-toolbox
 ```
-
-## Creating an Office Add-in
-```bash
-$ office-toolbox generate
-```
-
-This tool creates the scaffolding for an Office Add-in. Once it is complete, open a new command prompt in the new project's folder, and start the HTTPS site:
-```bash
-$ npm start
-```
-
-See [yo office](https://www.npmjs.com/package/generator-office) for more details on how to use the generated project.
 
 ## Validating an Office Add-in
 ```bash
