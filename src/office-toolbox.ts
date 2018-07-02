@@ -231,9 +231,10 @@ async function sideload(application: string, manifestPath: string) {
       application = await promptForApplication();
     }
 
-    if(application === 'word' || application === 'excel' || application === 'powerpoint'){
+    if(util.applicationProperties[application].canSideload){
       manifestPath = await checkAndPromptForPath(application, manifestPath);
       await util.sideload(application, manifestPath);
+      console.log('For more information about how to sideload Office Add-ins, visit the following link: ' + util.applicationProperties[application].documentationLink);
     }
     else{
       console.log('Automatic sideloading is not available for this app, please follow the instructions in the following link: ' + util.applicationProperties[application].documentationLink);
