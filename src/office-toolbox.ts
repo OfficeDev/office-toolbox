@@ -63,7 +63,7 @@ async function promptForApplication(): Promise<string> {
     name: 'application',
     type: 'list',
     message: 'Which application are you targeting?',
-    choices: ['Word', 'Excel', 'PowerPoint']
+    choices: ['Word', 'Excel', 'PowerPoint', 'Outlook', 'OneNote', 'Project']
   };
   return inquirer.prompt(question).then((answer) => {
     return Promise.resolve(answer['application'].toLowerCase());
@@ -226,8 +226,17 @@ async function sideload(application: string, manifestPath: string) {
       application = await promptForApplication();
     }
 
-    manifestPath = await checkAndPromptForPath(application, manifestPath);
-    await util.sideload(application, manifestPath);
+    const appProperties = util.applicationProperties[application];
+
+    if (appProperties.canSideload) {
+      manifestPath = await checkAndPromptForPath(application, manifestPath);
+      await util.sideload(application, manifestPath);
+      console.log(`For more information about how to sideload Office Add-ins, visit the following link: ${appProperties.documentationLink}`);
+    }
+    else {
+      console.log(`Automatic sideloading is not available for this app, please follow the instructions in the following link: ${appProperties.documentationLink}`);
+    }
+    
   } catch (err) {
     logRejection(err);
   }
