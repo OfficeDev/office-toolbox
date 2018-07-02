@@ -28,8 +28,8 @@ export const applicationProperties = {
       templateName: 'DocumentWithTaskPane.docx'
     },
     sideloadingDirectory: path.join(os.homedir(), 'Library/Containers/com.microsoft.Word/Data/Documents/wef'),
-    documentationLink:"https://docs.microsoft.com/en-us/office/dev/add-ins/testing/create-a-network-shared-folder-catalog-for-task-pane-and-content-add-ins",
-    canSideload:true
+    documentationLink: "https://docs.microsoft.com/en-us/office/dev/add-ins/testing/create-a-network-shared-folder-catalog-for-task-pane-and-content-add-ins",
+    canSideload: true
   },
   excel: {
     TaskPaneApp: {
@@ -41,8 +41,8 @@ export const applicationProperties = {
       templateName: 'BookWithContent.xlsx'
     },
     sideloadingDirectory: path.join(os.homedir(), 'Library/Containers/com.microsoft.Excel/Data/Documents/wef'),
-    documentationLink:"https://docs.microsoft.com/en-us/office/dev/add-ins/testing/create-a-network-shared-folder-catalog-for-task-pane-and-content-add-ins",
-    canSideload:true
+    documentationLink: "https://docs.microsoft.com/en-us/office/dev/add-ins/testing/create-a-network-shared-folder-catalog-for-task-pane-and-content-add-ins",
+    canSideload: true
   },
   powerpoint: {
     TaskPaneApp: {
@@ -54,20 +54,20 @@ export const applicationProperties = {
       templateName: 'PresentationWithContent.pptx'
     },
     sideloadingDirectory: path.join(os.homedir(), 'Library/Containers/com.microsoft.Powerpoint/Data/Documents/wef'),
-    documentationLink:"https://docs.microsoft.com/en-us/office/dev/add-ins/testing/create-a-network-shared-folder-catalog-for-task-pane-and-content-add-ins",
-    canSideload:true
+    documentationLink: "https://docs.microsoft.com/en-us/office/dev/add-ins/testing/create-a-network-shared-folder-catalog-for-task-pane-and-content-add-ins",
+    canSideload: true
   },
-  outlook:{
-    documentationLink:"https://docs.microsoft.com/en-us/outlook/add-ins/sideload-outlook-add-ins-for-testing",
-    canSideload:false
+  outlook: {
+    documentationLink: "https://docs.microsoft.com/en-us/outlook/add-ins/sideload-outlook-add-ins-for-testing",
+    canSideload: false
   },
-  onenote:{
-    documentationLink:"https://docs.microsoft.com/en-us/office/dev/add-ins/onenote/onenote-add-ins-getting-started",
-    canSideload:false
+  onenote: {
+    documentationLink: "https://docs.microsoft.com/en-us/office/dev/add-ins/onenote/onenote-add-ins-getting-started",
+    canSideload: false
   },
-  project:{
-    documentationLink:"https://docs.microsoft.com/en-us/office/dev/add-ins/project/project-add-ins",
-    canSideload:false
+  project: {
+    documentationLink: "https://docs.microsoft.com/en-us/office/dev/add-ins/project/project-add-ins",
+    canSideload: false
   }
 };
 
