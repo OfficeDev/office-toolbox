@@ -448,6 +448,44 @@ function getInfoForManifests(manifestPaths: string[]): Promise<any> {
   });
 }
 
+/** 
+ * makePathUnique 
+ * @description Given a file path, returns a unique file path where the file doesn't exist by 
+ * appending a period and a numeric suffix, starting from 2. 
+ * @param tryToDelete If true, first try to delete the file if it exists.
+ */
+function makePathUnique(originalPath: string, tryToDelete: boolean = false): string {
+  let currentPath = originalPath;
+  let parsedPath = null;
+  let suffix = 1;
+  
+  while (fs.existsSync(currentPath)) {
+    let deleted: boolean = false;
+
+    if (tryToDelete) {
+      try {
+        fs.removeSync(currentPath);
+        deleted = true;
+        console.log(`Deleted file: ${currentPath}`);  
+      } catch (err) {
+        console.log(`File is in use: ${currentPath}`);  
+      }
+    }
+
+    if (!deleted) {      
+      ++suffix;
+      
+      if (parsedPath == null) {
+        parsedPath = path.parse(originalPath);      
+      }
+      
+      currentPath = path.join(parsedPath.dir, `${parsedPath.name}.${suffix}${parsedPath.ext}`);
+    }
+  }
+
+  return currentPath;
+}
+
 function generateTemplateFile(application: string, type: string, id: string, version: string): Promise<any> {
   return new Promise(async (resolve, reject) => {
     try {
@@ -458,14 +496,10 @@ function generateTemplateFile(application: string, type: string, id: string, ver
 
       const defaultTemplateName = applicationProperties[application][type].templateName;
       const webExtensionPath = applicationProperties[application][type].webExtensionPath;
-      let templatePath = path.join(process.cwd(), defaultTemplateName);
-
-      let i = 0;
-      while (fs.existsSync(templatePath)) {
-        const [templateName, templateExtension] = defaultTemplateName.split('.');
-        templatePath = path.join(process.cwd(), templateName + i + '.' + templateExtension);
-        i++;
-      }
+      const extension = path.extname(defaultTemplateName);
+      const templatePath = makePathUnique(path.join(os.tmpdir(), `${application} add-in ${id}${extension}`), true);
+  
+      fs.ensureDirSync(path.dirname(templatePath));
 
       console.log(`Generating file ${templatePath}`);
 
