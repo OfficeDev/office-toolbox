@@ -12,19 +12,27 @@ import * as inquirer from 'inquirer';
 import * as path from 'path';
 
 import * as util from './util';
+import { Telemetry, ExceptionTelemetry } from 'applicationinsights/out/Declarations/Contracts';
 
 function logRejection(err) {
   // When the error might contain personally identifiable information, only track the generic part.
+  let exceptionTelemetry : ExceptionTelemetry;
   if (err instanceof Array && err.length) {
-    util.appInsightsClient.trackException({exception: new Error(err[0])});
+    exceptionTelemetry['exception'] = new Error(err[0]);
     for (let message of err) {
       console.log(chalk.default.red(message));
     }
   }
-  else {
-    util.appInsightsClient.trackException({exception: new Error(err)});
+  else if (typeof err === "string"){
+    exceptionTelemetry['exception'] = new Error(err);
     console.log(chalk.default.red(err));
   }
+  else if (err instanceof Error){
+    exceptionTelemetry['exception'] = err;
+    console.log(chalk.default.red(err.message));
+  }
+
+  util.appInsightsClient.trackException(exceptionTelemetry);
 }
 
 // PROMPT FUNCTIONS //
