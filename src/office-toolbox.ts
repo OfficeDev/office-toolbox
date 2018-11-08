@@ -14,17 +14,23 @@ import * as path from 'path';
 import * as util from './util';
 
 function logRejection(err) {
-  // When the error might contain personally identifiable information, only track the generic part.
-  if (err instanceof Array && err.length) {
-    util.appInsightsClient.trackException(err[0]);
-    for (let message of err) {
-      console.log(chalk.default.red(message));
-    }
+  let error: Error = undefined;
+
+  if (err instanceof Array) {
+     if (err.length) {
+         error = (err[0] instanceof Error) ? err[0] : new Error(err[0]);
+  
+         for (const message of err) {
+             console.log(chalk.default.red(message));
+          }
+      }
   }
   else {
-    util.appInsightsClient.trackException(err[0]);
-    console.log(chalk.default.red(err));
+      error = (err instanceof Error) ? err : new Error(err);
+      console.log(chalk.default.red(err));  
   }
+  
+  util.appInsightsClient.trackException({ exception: error });
 }
 
 // PROMPT FUNCTIONS //
