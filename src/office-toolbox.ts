@@ -12,27 +12,25 @@ import * as inquirer from 'inquirer';
 import * as path from 'path';
 
 import * as util from './util';
-import { Telemetry, ExceptionTelemetry } from 'applicationinsights/out/Declarations/Contracts';
 
 function logRejection(err) {
-  // When the error might contain personally identifiable information, only track the generic part.
-  let exceptionTelemetry : ExceptionTelemetry;
-  if (err instanceof Array && err.length) {
-    exceptionTelemetry['exception'] = new Error(err[0]);
-    for (let message of err) {
-      console.log(chalk.default.red(message));
-    }
-  }
-  else if (typeof err === "string"){
-    exceptionTelemetry['exception'] = new Error(err);
-    console.log(chalk.default.red(err));
-  }
-  else if (err instanceof Error){
-    exceptionTelemetry['exception'] = err;
-    console.log(chalk.default.red(err.message));
-  }
+  let error: Error = undefined;
 
-  util.appInsightsClient.trackException(exceptionTelemetry);
+  if (err instanceof Array) {
+     if (err.length) {
+         error = (err[0] instanceof Error) ? err[0] : new Error(err[0]);
+  
+         for (const message of err) {
+             console.log(chalk.default.red(message));
+          }
+      }
+  }
+  else {
+      error = (err instanceof Error) ? err : new Error(err);
+      console.log(chalk.default.red(err));  
+  }
+  
+  util.appInsightsClient.trackException({ exception: error });
 }
 
 // PROMPT FUNCTIONS //
