@@ -37,7 +37,6 @@
   },
   "devDependencies": {
     "@types/applicationinsights": "^0.20.0",
-    "@types/commander": "^2.3.31",
     "@types/jszip": "^3.1.4",
     "@types/node-powershell": "^3.1.0",
     "@types/xml2js": "^0.4.3",
