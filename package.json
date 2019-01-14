@@ -1,6 +1,6 @@
 {
   "name": "office-toolbox",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Tools for Office Add-ins",
   "main": "./app/util.js",
   "scripts": {
