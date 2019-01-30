@@ -11,7 +11,7 @@ import * as fs from 'fs-extra';
 import * as inquirer from 'inquirer';
 import * as path from 'path';
 
-import * as util from './util';
+import * as util from './util'; 
 
 function logRejection(err) {
   let error: Error = undefined;
