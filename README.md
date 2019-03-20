@@ -1,3 +1,13 @@
+---
+topic: sample
+products:
+- Office 365
+languages:
+- TypeScript
+extensions:
+  contentType: tools
+  createdDate: 7/13/2017 1:13:10 PM
+---
 # office-toolbox
 
 Office-Toolbox is a set of tools for validating, and sideloading an Office Add-in. It is not (yet) a part of the official Office Add-in toolchain, but allows you to bypass the manual steps for sideloading add-ins. If you prefer to use the official Office toolchain, see our documentation on [getting started with Office Add-ins](https://dev.office.com/docs/add-ins/get-started/create-an-office-add-in-using-any-editor) and [how to sideload an add-in](https://dev.office.com/docs/add-ins/testing/create-a-network-shared-folder-catalog-for-task-pane-and-content-add-ins).
