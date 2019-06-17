@@ -141,7 +141,7 @@ function addManifestToSideloadingDirectory(application: string, manifestPath: st
       const stat = fs.statSync(manifestPath);
       const sideloadingStat = fs.statSync(sideloadingManifestPath);
 
-      if (stat.ino !== sideloadingStat.ino && stat.dev !== sideloadingStat.dev) {
+      if (stat.ino !== sideloadingStat.ino || stat.dev !== sideloadingStat.dev) {
         return reject(['Remove the manifest with matching name before adding this one. ', fs.realpathSync(sideloadingManifestPath)]);
       }
     }
