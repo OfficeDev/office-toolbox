@@ -100,10 +100,10 @@ export function getManifests(application: string): Promise<string[]> {
     : getManifestsFromSideloadingDirectory(application);
 }
 
-function addManifest(application: string, manifestPath: string): Promise<any> {
+function addManifest(application: string, manifestPath: string, parsedGuid: string): Promise<any> {
   return (process.platform === 'win32')
     ? addManifestToRegistry(manifestPath)
-    : addManifestToSideloadingDirectory(application, manifestPath);
+    : addManifestToSideloadingDirectory(application, manifestPath, parsedGuid);
 }
 
 async function getAllManifests(): Promise<string[]> {
@@ -130,18 +130,18 @@ function removeManifest(application: string, manifestPath: string): Promise<any>
 }
 
 // NON-WIN32 COMMANDS //
-function addManifestToSideloadingDirectory(application: string, manifestPath: string): Promise<any> {
+function addManifestToSideloadingDirectory(application: string, manifestPath: string, parsedGuid: string): Promise<any> {
   return new Promise ((resolve, reject) => {
     const sideloadingDirectory = applicationProperties[application].sideloadingDirectory;
     fs.ensureDirSync(sideloadingDirectory);
 
-    const sideloadingManifestPath = path.join(sideloadingDirectory, path.basename(manifestPath));
+    const sideloadingManifestPath = path.join(sideloadingDirectory, parsedGuid, path.basename(manifestPath));
 
     if (fs.existsSync(sideloadingManifestPath)) {
       const stat = fs.statSync(manifestPath);
       const sideloadingStat = fs.statSync(sideloadingManifestPath);
 
-      if (stat.ino !== sideloadingStat.ino && stat.dev !== sideloadingStat.dev) {
+      if (stat.ino !== sideloadingStat.ino || stat.dev !== sideloadingStat.dev) {
         return reject(['Remove the manifest with matching name before adding this one. ', fs.realpathSync(sideloadingManifestPath)]);
       }
     }
@@ -300,7 +300,7 @@ function sideloadManifest(application: string, manifestPath: string): Promise<an
       }
 
       const [parsedType, parsedGuid, parsedVersion] = await parseManifest(manifestPath);
-      await addManifest(application, manifestPath);
+      await addManifest(application, manifestPath, parsedGuid);
       const templateFile = await generateTemplateFile(application, parsedType, parsedGuid, parsedVersion);
 
       appInsightsClient.trackEvent({ name: 'open', properties: { guid: parsedGuid, version: parsedVersion }});
