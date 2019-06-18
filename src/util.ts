@@ -141,7 +141,7 @@ function addManifestToSideloadingDirectory(application: string, manifestPath: st
       const stat = fs.statSync(manifestPath);
       const sideloadingStat = fs.statSync(sideloadingManifestPath);
 
-      if (stat.ino !== sideloadingStat.ino || stat.dev !== sideloadingStat.dev) {
+      if (stat.ino !== sideloadingStat.ino && stat.dev !== sideloadingStat.dev) {
         return reject(['Remove the manifest with matching name before adding this one. ', fs.realpathSync(sideloadingManifestPath)]);
       }
     }
@@ -175,8 +175,7 @@ function getManifestsFromSideloadingDirectory(inputApplication: string): Promise
 function removeManifestFromSideloadingDirectory(inputApplication: string, manifestPathToRemove: string): Promise<any> {
   return new Promise(async (resolve, reject) => {
     try {
-      let manifestRemoved = false;
-      
+      let manifestRemoved = false;      
 
       for (let application of Object.keys(applicationProperties)) {
         if (!inputApplication || application === inputApplication) {
