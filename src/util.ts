@@ -131,20 +131,12 @@ function removeManifest(application: string, manifestPath: string): Promise<any>
 
 // NON-WIN32 COMMANDS //
 function addManifestToSideloadingDirectory(application: string, manifestPath: string): Promise<any> {
-  return new Promise ((resolve, reject) => {
+  return new Promise (async (resolve, reject) => {
     const sideloadingDirectory = applicationProperties[application].sideloadingDirectory;
     fs.ensureDirSync(sideloadingDirectory);
 
-    const sideloadingManifestPath = path.join(sideloadingDirectory, path.basename(manifestPath));
-
-    if (fs.existsSync(sideloadingManifestPath)) {
-      const stat = fs.statSync(manifestPath);
-      const sideloadingStat = fs.statSync(sideloadingManifestPath);
-
-      if (stat.ino !== sideloadingStat.ino && stat.dev !== sideloadingStat.dev) {
-        return reject(['Remove the manifest with matching name before adding this one. ', fs.realpathSync(sideloadingManifestPath)]);
-      }
-    }
+    const [type, manifestGuid, version] = await parseManifest(manifestPath);
+    const sideloadingManifestPath = path.join(sideloadingDirectory, manifestGuid.concat(".", path.basename(manifestPath)));
 
     fs.ensureLinkSync(manifestPath, sideloadingManifestPath);
     resolve();
@@ -180,7 +172,6 @@ function removeManifestFromSideloadingDirectory(inputApplication: string, manife
       for (let application of Object.keys(applicationProperties)) {
         if (!inputApplication || application === inputApplication) {
           const sideloadingDirectory = applicationProperties[application].sideloadingDirectory;
-          const sideloadingManifestPath = path.join(sideloadingDirectory, path.basename(manifestPathToRemove));
 
           if (!fs.existsSync(sideloadingDirectory)) {
             continue;
@@ -188,9 +179,10 @@ function removeManifestFromSideloadingDirectory(inputApplication: string, manife
 
           fs.readdirSync(sideloadingDirectory).forEach(manifestName => {
             const realManifestPath = (fs.realpathSync(path.join(sideloadingDirectory, manifestName)));
-            if (sideloadingManifestPath === realManifestPath) {
-              console.log(`Removing ${sideloadingManifestPath} for application ${application}`);
-              fs.unlinkSync(sideloadingManifestPath);
+            const sideloadedManifestPath = path.join(sideloadingDirectory, manifestGuid.concat(".", path.basename(manifestPathToRemove)));
+            if (sideloadedManifestPath === realManifestPath) {
+              console.log(`Removing ${sideloadedManifestPath} for application ${application}`);
+              fs.unlinkSync(sideloadedManifestPath);
               manifestRemoved = true;
             }
           });
