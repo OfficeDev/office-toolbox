@@ -180,6 +180,7 @@ function removeManifestFromSideloadingDirectory(inputApplication: string, manife
       for (let application of Object.keys(applicationProperties)) {
         if (!inputApplication || application === inputApplication) {
           const sideloadingDirectory = applicationProperties[application].sideloadingDirectory;
+          const sideloadingManifestPath = path.join(sideloadingDirectory, path.basename(manifestPathToRemove));
 
           if (!fs.existsSync(sideloadingDirectory)) {
             continue;
@@ -187,9 +188,9 @@ function removeManifestFromSideloadingDirectory(inputApplication: string, manife
 
           fs.readdirSync(sideloadingDirectory).forEach(manifestName => {
             const realManifestPath = (fs.realpathSync(path.join(sideloadingDirectory, manifestName)));
-            if (manifestPathToRemove === realManifestPath) {
-              console.log(`Removing ${manifestPathToRemove} for application ${application}`);
-              fs.unlinkSync(manifestPathToRemove);
+            if (sideloadingManifestPath === realManifestPath) {
+              console.log(`Removing ${sideloadingManifestPath} for application ${application}`);
+              fs.unlinkSync(sideloadingManifestPath);
               manifestRemoved = true;
             }
           });
