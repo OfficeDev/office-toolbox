@@ -100,10 +100,10 @@ export function getManifests(application: string): Promise<string[]> {
     : getManifestsFromSideloadingDirectory(application);
 }
 
-function addManifest(application: string, manifestPath: string, parsedGuid: string): Promise<any> {
+function addManifest(application: string, manifestPath: string): Promise<any> {
   return (process.platform === 'win32')
     ? addManifestToRegistry(manifestPath)
-    : addManifestToSideloadingDirectory(application, manifestPath, parsedGuid);
+    : addManifestToSideloadingDirectory(application, manifestPath);
 }
 
 async function getAllManifests(): Promise<string[]> {
@@ -130,12 +130,12 @@ function removeManifest(application: string, manifestPath: string): Promise<any>
 }
 
 // NON-WIN32 COMMANDS //
-function addManifestToSideloadingDirectory(application: string, manifestPath: string, parsedGuid: string): Promise<any> {
+function addManifestToSideloadingDirectory(application: string, manifestPath: string): Promise<any> {
   return new Promise ((resolve, reject) => {
     const sideloadingDirectory = applicationProperties[application].sideloadingDirectory;
     fs.ensureDirSync(sideloadingDirectory);
 
-    const sideloadingManifestPath = path.join(sideloadingDirectory, parsedGuid, path.basename(manifestPath));
+    const sideloadingManifestPath = path.join(sideloadingDirectory, path.basename(manifestPath));
 
     if (fs.existsSync(sideloadingManifestPath)) {
       const stat = fs.statSync(manifestPath);
@@ -176,10 +176,12 @@ function removeManifestFromSideloadingDirectory(inputApplication: string, manife
   return new Promise(async (resolve, reject) => {
     try {
       let manifestRemoved = false;
+      
 
       for (let application of Object.keys(applicationProperties)) {
         if (!inputApplication || application === inputApplication) {
           const sideloadingDirectory = applicationProperties[application].sideloadingDirectory;
+          const sideloadingManifestPath = path.join(sideloadingDirectory, path.basename(manifestPathToRemove));
 
           if (!fs.existsSync(sideloadingDirectory)) {
             continue;
@@ -187,9 +189,9 @@ function removeManifestFromSideloadingDirectory(inputApplication: string, manife
 
           fs.readdirSync(sideloadingDirectory).forEach(manifestName => {
             const realManifestPath = (fs.realpathSync(path.join(sideloadingDirectory, manifestName)));
-            if (manifestPathToRemove === realManifestPath) {
-              console.log(`Removing ${manifestPathToRemove} for application ${application}`);
-              fs.unlinkSync(manifestPathToRemove);
+            if (sideloadingManifestPath === realManifestPath) {
+              console.log(`Removing ${sideloadingManifestPath} for application ${application}`);
+              fs.unlinkSync(sideloadingManifestPath);
               manifestRemoved = true;
             }
           });
@@ -300,7 +302,7 @@ function sideloadManifest(application: string, manifestPath: string): Promise<an
       }
 
       const [parsedType, parsedGuid, parsedVersion] = await parseManifest(manifestPath);
-      await addManifest(application, manifestPath, parsedGuid);
+      await addManifest(application, manifestPath);
       const templateFile = await generateTemplateFile(application, parsedType, parsedGuid, parsedVersion);
 
       appInsightsClient.trackEvent({ name: 'open', properties: { guid: parsedGuid, version: parsedVersion }});
