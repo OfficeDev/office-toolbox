@@ -172,6 +172,7 @@ function removeManifestFromSideloadingDirectory(inputApplication: string, manife
       for (let application of Object.keys(applicationProperties)) {
         if (!inputApplication || application === inputApplication) {
           const sideloadingDirectory = applicationProperties[application].sideloadingDirectory;
+          const [type, manifestGuid, version] = await parseManifest(manifestPathToRemove);
 
           if (!fs.existsSync(sideloadingDirectory)) {
             continue;
