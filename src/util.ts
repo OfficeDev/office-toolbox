@@ -124,23 +124,18 @@ function removeManifest(application: string, manifestPath: string): Promise<any>
     manifestPath = fs.realpathSync(manifestPath);
   }
 
-  return (process.platform === 'win32'
+  return (process.platform === 'win32')
     ? removeManifestFromRegistry(manifestPath)
-    : removeManifestFromSideloadingDirectory(application, manifestPath));
+    : removeManifestFromSideloadingDirectory(application, manifestPath);
 }
 
 // NON-WIN32 COMMANDS //
-function addManifestToSideloadingDirectory(application: string, manifestPath: string): Promise<any> {
-  return new Promise (async (resolve, reject) => {
-    const sideloadingDirectory = applicationProperties[application].sideloadingDirectory;
-    fs.ensureDirSync(sideloadingDirectory);
+async function addManifestToSideloadingDirectory(application: string, manifestPath: string): Promise<void> {
+  const sideloadingDirectory = applicationProperties[application].sideloadingDirectory;
+  fs.ensureDirSync(sideloadingDirectory);
+  const sideloadingManifestPath = await getSideloadManifestPath(manifestPath, application);
 
-    const [type, manifestGuid, version] = await parseManifest(manifestPath);
-    const sideloadingManifestPath = path.join(sideloadingDirectory, manifestGuid.concat(".", path.basename(manifestPath)));
-
-    fs.ensureLinkSync(manifestPath, sideloadingManifestPath);
-    resolve();
-  });
+  fs.ensureLinkSync(manifestPath, sideloadingManifestPath);
 }
 
 function getManifestsFromSideloadingDirectory(inputApplication: string): Promise<string[]> {
@@ -172,15 +167,14 @@ function removeManifestFromSideloadingDirectory(inputApplication: string, manife
       for (let application of Object.keys(applicationProperties)) {
         if (!inputApplication || application === inputApplication) {
           const sideloadingDirectory = applicationProperties[application].sideloadingDirectory;
-          const [type, manifestGuid, version] = await parseManifest(manifestPathToRemove);
 
           if (!fs.existsSync(sideloadingDirectory)) {
             continue;
           }
 
-          fs.readdirSync(sideloadingDirectory).forEach(manifestName => {
+          fs.readdirSync(sideloadingDirectory).forEach(async manifestName => {
             const realManifestPath = (fs.realpathSync(path.join(sideloadingDirectory, manifestName)));
-            const sideloadedManifestPath = path.join(sideloadingDirectory, manifestGuid.concat(".", path.basename(manifestPathToRemove)));
+            const sideloadedManifestPath = await getSideloadManifestPath(manifestPathToRemove, application);
             if (sideloadedManifestPath === realManifestPath) {
               console.log(`Removing ${sideloadedManifestPath} for application ${application}`);
               fs.unlinkSync(sideloadedManifestPath);
@@ -349,6 +343,11 @@ function validateManifest(manifestPath: string): Promise<string> {
       return reject(err);
     }
   });
+}
+
+async function getSideloadManifestPath(manifestPath: string, application: string): Promise<string> {
+  const [type, manifestGuid, version] = await parseManifest(manifestPath);
+  return path.join(applicationProperties[application].sideloadingDirectory, `${manifestGuid}.${path.basename(manifestPath)}`);
 }
 
 function getIdsAndManifests(application: string): Promise<Array<[string, string]>> {
