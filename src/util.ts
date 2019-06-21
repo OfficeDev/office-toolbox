@@ -139,7 +139,7 @@ async function addManifestToSideloadingDirectory(application: string, manifestPa
     return fs.ensureLinkSync(manifestPath, sideloadingManifestPath);
 
   } catch (err) {
-    throw new Error(`Unable to add manifest to the sideloading directory\n${err}`);
+    throw new Error(`Unable to add manifest to the sideloading directory.\n${err}`);
   }
 }
 
