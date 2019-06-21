@@ -139,7 +139,7 @@ async function addManifestToSideloadingDirectory(application: string, manifestPa
     return fs.ensureLinkSync(manifestPath, sideloadingManifestPath);
 
   } catch (err) {
-    throw new Error(`addManifestToSideloadingDirectory failed with error:\n${err}`);
+    throw new Error(`Unable to add manifest to the sideloading directory\n${err}`);
   }
 }
 
@@ -191,7 +191,7 @@ async function removeManifestFromSideloadingDirectory(inputApplication: string, 
     }
     return console.log('No manifests were found to remove. Use "list" to show manifests that have been added.');
   } catch (err) {
-    throw new Error(`removeManifestFromSideloadingDirectory failed with error:\n${err}`);
+    throw new Error(`Unable to remove the manifest from the sideloading directory.\n${err}`);
   }
 }
 
