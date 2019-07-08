@@ -8,7 +8,7 @@
     "tsc-watch": "tsc -p tsconfig.json -w",
     "build": "rimraf app && concurrently \"npm run tsc\"",
     "start": "rimraf app && concurrently \"npm run tsc-watch\"",
-    "test": "mocha -r ts-node/register src/test/*.ts",
+    "test": "mocha -r ts-node/register test/*.ts",
     "run": "office-toolbox"
   },
   "keywords": [

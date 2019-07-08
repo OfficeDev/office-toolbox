@@ -182,8 +182,7 @@ async function removeManifestFromSideloadingDirectory(inputApplication: string, 
         let legacySideloadingManifestPath = undefined;
         if (manifestSelected) {
           sideloadingManifestPath = manifestPathToRemove;
-        }
-        else {
+        } else {
           sideloadingManifestPath = await getSideloadManifestPath(manifestPathToRemove, application);
           legacySideloadingManifestPath = await getLegacySideloadManifestPath(manifestPathToRemove, application);
         }

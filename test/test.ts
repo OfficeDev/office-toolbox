@@ -2,7 +2,7 @@
 import * as assert from "assert";
 import * as fs from "fs";
 import * as mocha from "mocha";
-import * as officeToolbox from "../util";
+import * as officeToolbox from "../src/util";
 import * as path from "path";
 import * as util from "util";
 const application = "excel";
@@ -12,7 +12,7 @@ describe("Add manifest", function () {
         this.timeout(0);
         let manifestFound = false;
         let manifests: string[];
-        let testManifestPath = path.resolve(`${process.cwd()}/src/test/test-manifest.xml`);
+        let testManifestPath = path.resolve(`${process.cwd()}/test/test-manifest.xml`);
 
         it(process.platform === "win32" ? "Manifest should have been added to the registry" : "Manifest should have been added to the WEF folder and given a unique name", async function () {
             await officeToolbox.addManifest(application, testManifestPath);
@@ -26,7 +26,7 @@ describe("Add manifest", function () {
             }
 
             manifests.forEach(element => {
-                if (element = testManifestPath) {
+                if (element == testManifestPath) {
                     manifestFound = true;
                 }
             });
@@ -40,7 +40,7 @@ describe("Remove manifest", function () {
         this.timeout(0);
         let manifestFound = false;
         let manifests: string[];
-        let testManifestPath = path.resolve(`${process.cwd()}/src/test/test-manifest.xml`);
+        let testManifestPath = path.resolve(`${process.cwd()}/test/test-manifest.xml`);
 
         it(process.platform === "win32" ? "Manifest should have been removed from the registry" : "Manifest should have been removed from the WEF folder", async function () {
             await officeToolbox.removeManifest(application, testManifestPath, false /* manifestSelected */);
@@ -54,7 +54,7 @@ describe("Remove manifest", function () {
             }
 
             manifests.forEach(element => {
-                if (element = testManifestPath) {
+                if (element == testManifestPath) {
                     manifestFound = true;
                 }
             });
@@ -70,7 +70,7 @@ if (process.platform == "darwin") {
             this.timeout(0);
             let manifestFound = false;
             let manifests: string[];
-            let testManifestPath = path.resolve(`${process.cwd()}/src/test/test-manifest.xml`);
+            let testManifestPath = path.resolve(`${process.cwd()}/test/test-manifest.xml`);
 
             it("Manifest should have been removed from the WEF folder", async function () {
                 // Copy legacy manifest file name over to the WEF folder - this is neccessary because office-toolbox code no longer uses the legacy file name.                
@@ -84,7 +84,7 @@ if (process.platform == "darwin") {
                 manifests = await officeToolbox.getManifestsFromSideloadingDirectory(application);
 
                 manifests.forEach(element => {
-                    if (element = legacyManifestFilePath) {
+                    if (element == legacyManifestFilePath) {
                         manifestFound = true;
                     }
                 });
@@ -98,7 +98,7 @@ if (process.platform == "darwin") {
             this.timeout(0);
             let manifestFound = false;
             let manifests: string[];
-            let testManifestPath = path.resolve(`${process.cwd()}/src/test/test-manifest.xml`);
+            let testManifestPath = path.resolve(`${process.cwd()}/test/test-manifest.xml`);
 
             it("Manifest should have been removed from the WEF folder", async function () {
                 // Copy legacy manifest file name over to the WEF folder - this is neccessary because office-toolbox code no longer uses the legacy file name.                
@@ -112,7 +112,7 @@ if (process.platform == "darwin") {
                 manifests = await officeToolbox.getManifestsFromSideloadingDirectory(application);
 
                 manifests.forEach(element => {
-                    if (element = legacyManifestFilePath) {
+                    if (element == legacyManifestFilePath) {
                         manifestFound = true;
                     }
                 });
