@@ -79,13 +79,13 @@ export function sideload(application: string, manifestPath: string): Promise<any
 }
 
 export function list(): Promise<Array<[string, string, string]>> {
-  appInsightsClient.trackEvent({ name: 'list'});
+  appInsightsClient.trackEvent({ name: 'list' });
   return getAllIdsAndManifests();
 }
 
-export function remove(application: string, manifestPath: string): Promise<any> {
+export function remove(application: string, manifestPath: string, manifestSelected: boolean): Promise<any> {
   appInsightsClient.trackEvent({ name: 'remove' });
-  return removeManifest(application, manifestPath);
+  return removeManifest(application, manifestPath, manifestSelected);
 }
 
 export function validate(manifestPath: string): Promise<string> {
@@ -100,7 +100,7 @@ export function getManifests(application: string): Promise<string[]> {
     : getManifestsFromSideloadingDirectory(application);
 }
 
-function addManifest(application: string, manifestPath: string): Promise<any> {
+export function addManifest(application: string, manifestPath: string): Promise<any> {
   return (process.platform === 'win32')
     ? addManifestToRegistry(manifestPath)
     : addManifestToSideloadingDirectory(application, manifestPath);
@@ -119,20 +119,22 @@ async function getAllManifests(): Promise<string[]> {
   }
 }
 
-function removeManifest(application: string, manifestPath: string): Promise<any> {
+
+
+export function removeManifest(application: string, manifestPath: string, manifestSelected): Promise<any> {
   if (fs.existsSync(manifestPath)) {
     manifestPath = fs.realpathSync(manifestPath);
   }
 
   return (process.platform === 'win32')
     ? removeManifestFromRegistry(manifestPath)
-    : removeManifestFromSideloadingDirectory(application, manifestPath);
+    : removeManifestFromSideloadingDirectory(application, manifestPath, manifestSelected);
 }
 
 // NON-WIN32 COMMANDS //
 async function addManifestToSideloadingDirectory(application: string, manifestPath: string): Promise<void> {
   try {
-    const sideloadingDirectory = applicationProperties[application].sideloadingDirectory;
+    const sideloadingDirectory = getSideloadingManifestDirectory(application);
     fs.ensureDirSync(sideloadingDirectory);
     const sideloadingManifestPath = await getSideloadManifestPath(manifestPath, application);
     console.log(`Adding ${sideloadingManifestPath} for application ${application}`);
@@ -143,13 +145,13 @@ async function addManifestToSideloadingDirectory(application: string, manifestPa
   }
 }
 
-function getManifestsFromSideloadingDirectory(inputApplication: string): Promise<string[]> {
+export function getManifestsFromSideloadingDirectory(inputApplication: string): Promise<string[]> {
   return new Promise((resolve, reject) => {
     let manifestPaths = [];
 
     for (let application of Object.keys(applicationProperties)) {
       if (!inputApplication || application === inputApplication) {
-        const sideloadingDirectory = applicationProperties[application].sideloadingDirectory;
+        const sideloadingDirectory = getSideloadingManifestDirectory(application);
 
         if (!fs.existsSync(sideloadingDirectory)) {
           continue;
@@ -164,29 +166,44 @@ function getManifestsFromSideloadingDirectory(inputApplication: string): Promise
   });
 }
 
-async function removeManifestFromSideloadingDirectory(inputApplication: string, manifestPathToRemove: string): Promise<void> {
+async function removeManifestFromSideloadingDirectory(inputApplication: string, manifestPathToRemove: string, manifestSelected: boolean): Promise<void> {
   try {
     let manifestRemoved = false;
+
     for (let application of Object.keys(applicationProperties)) {
       if (!inputApplication || application === inputApplication) {
-        const sideloadingDirectory = applicationProperties[application].sideloadingDirectory;
+        const sideloadingDirectory = getSideloadingManifestDirectory(application);
 
         if (!fs.existsSync(sideloadingDirectory)) {
           continue;
         }
 
-        const sideloadingManifestPath = await getSideloadManifestPath(manifestPathToRemove, application);
+        let sideloadingManifestPath = undefined;
+        let legacySideloadingManifestPath = undefined;
+        if (manifestSelected) {
+          sideloadingManifestPath = manifestPathToRemove;
+        } else {
+          sideloadingManifestPath = await getSideloadManifestPath(manifestPathToRemove, application);
+          legacySideloadingManifestPath = await getLegacySideloadManifestPath(manifestPathToRemove, application);
+        }
+
+        // Check the wef folder for both the uniquely named manifest file and the generically named manifest file
         fs.readdirSync(sideloadingDirectory).forEach(manifestName => {
           const realManifestPath = (fs.realpathSync(path.join(sideloadingDirectory, manifestName)));
-          if (sideloadingManifestPath === realManifestPath) {
+          if (fs.existsSync(sideloadingManifestPath) && sideloadingManifestPath === realManifestPath) {
             console.log(`Removing ${sideloadingManifestPath} for application ${application}`);
             fs.unlinkSync(sideloadingManifestPath);
             manifestRemoved = true;
           }
+          if (fs.existsSync(legacySideloadingManifestPath) && legacySideloadingManifestPath === realManifestPath) {
+            console.log(`Removing ${legacySideloadingManifestPath} for application ${application}`);
+            fs.unlinkSync(legacySideloadingManifestPath);
+            manifestRemoved = true;
+          }
         });
-      }
-      if (manifestRemoved) {
-        return;
+        if (manifestRemoved) {
+          return;
+        }
       }
     }
     return console.log('No manifests were found to remove. Use "list" to show manifests that have been added.');
@@ -198,7 +215,7 @@ async function removeManifestFromSideloadingDirectory(inputApplication: string, 
 // WIN32 SPECIFIC COMMANDS //
 function querySideloadingRegistry(commands: string[]): Promise<string> {
   return new Promise(async (resolve, reject) => {
-    let ps = new shell({'debugMsg': false});
+    let ps = new shell({ 'debugMsg': false });
 
     try {
       // Ensure that the registry path exists
@@ -212,7 +229,7 @@ function querySideloadingRegistry(commands: string[]): Promise<string> {
       await ps.invoke();
       ps.dispose();
 
-      ps = new shell({'debugMsg': false});
+      ps = new shell({ 'debugMsg': false });
       ps.addCommand('$RegistryPath = "' + office16RegistryPath + wefFolder + developerFolder + '"');
       for (const command of commands) {
         ps.addCommand(command);
@@ -237,8 +254,8 @@ function addManifestToRegistry(manifestPath: string): Promise<any> {
   return querySideloadingRegistry(['Set-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestPath + '" -Value "' + manifestPath + '"']);
 }
 
-function getManifestsFromRegistry(): Promise<string[]> {
-  return new Promise(async(resolve, reject) => {
+export function getManifestsFromRegistry(): Promise<string[]> {
+  return new Promise(async (resolve, reject) => {
     try {
       const registryOutput = await querySideloadingRegistry(['Get-ItemProperty -LiteralPath $RegistryPath | ConvertTo-Json -Compress']);
 
@@ -274,7 +291,7 @@ function removeManifestFromRegistry(manifestPath: string): Promise<any> {
 }
 
 // GENERIC HELPER FUNCTIONS //
-function isGuid (text: string): boolean {
+function isGuid(text: string): boolean {
   const guidRegex = /^[0-9A-F]{8}[-]?([0-9A-F]{4}[-]?){3}[0-9A-F]{12}?/i;
   return guidRegex.test(text);
 }
@@ -293,9 +310,9 @@ function sideloadManifest(application: string, manifestPath: string): Promise<an
       await addManifest(application, manifestPath);
       const templateFile = await generateTemplateFile(application, parsedType, parsedGuid, parsedVersion);
 
-      appInsightsClient.trackEvent({ name: 'open', properties: { guid: parsedGuid, version: parsedVersion }});
+      appInsightsClient.trackEvent({ name: 'open', properties: { guid: parsedGuid, version: parsedVersion } });
       console.log(`Opening file ${templateFile}`);
-      opn(templateFile, { wait: false});
+      opn(templateFile, { wait: false });
       resolve();
     }
     catch (err) {
@@ -347,9 +364,17 @@ function validateManifest(manifestPath: string): Promise<string> {
   });
 }
 
-async function getSideloadManifestPath(manifestPath: string, application: string): Promise<string> {
+export function getSideloadingManifestDirectory(application: string): string {
+  return applicationProperties[application].sideloadingDirectory;
+}
+
+export async function getSideloadManifestPath(manifestPath: string, application: string): Promise<string> {
   const [type, manifestGuid, version] = await parseManifest(manifestPath);
-  return path.join(applicationProperties[application].sideloadingDirectory, `${manifestGuid}.${path.basename(manifestPath)}`);
+  return path.join(getSideloadingManifestDirectory(application), `${manifestGuid}.${path.basename(manifestPath)}`);
+}
+
+async function getLegacySideloadManifestPath(manifestPath: string, application: string): Promise<string> {
+  return path.join(getSideloadingManifestDirectory(application), path.basename(manifestPath));
 }
 
 function getIdsAndManifests(application: string): Promise<Array<[string, string]>> {
@@ -384,16 +409,16 @@ function parseManifest(manifestPath: string): Promise<[string, string, string]> 
       }
 
       parser.parseString(manifestBuffer, (err, manifestXml) => {
-        if (!manifestXml || typeof(manifestXml) !== 'object') {
+        if (!manifestXml || typeof (manifestXml) !== 'object') {
           return reject(['Failed to parse the manifest file: ', manifestPath]);
         }
         else if (!('OfficeApp' in manifestXml)) {
           return reject(['OfficeApp missing in manifest file: ', manifestPath]);
         }
         else if (!('$' in manifestXml['OfficeApp'] &&
-            typeof(manifestXml['OfficeApp']['$'] === 'object') &&
-            'xsi:type' in manifestXml['OfficeApp']['$'] &&
-            typeof(manifestXml['OfficeApp']['$']['xsi:type'] === 'string'))) {
+          typeof (manifestXml['OfficeApp']['$'] === 'object') &&
+          'xsi:type' in manifestXml['OfficeApp']['$'] &&
+          typeof (manifestXml['OfficeApp']['$']['xsi:type'] === 'string'))) {
           return reject(['xsi:type missing in manifest file: ', manifestPath]);
         }
         else if (!('Id' in manifestXml['OfficeApp'] && manifestXml['OfficeApp']['Id'] instanceof Array)) {
@@ -417,7 +442,7 @@ function parseManifest(manifestPath: string): Promise<[string, string, string]> 
           return reject('The manifest must have xsi:type set to ContentApp or TaskPaneApp');
         }
 
-        resolve ([type, id, version]);
+        resolve([type, id, version]);
       });
     }
     catch (err) {
@@ -453,7 +478,7 @@ function makePathUnique(originalPath: string, tryToDelete: boolean = false): str
   let currentPath = originalPath;
   let parsedPath = null;
   let suffix = 1;
-  
+
   while (fs.existsSync(currentPath)) {
     let deleted: boolean = false;
 
@@ -461,19 +486,19 @@ function makePathUnique(originalPath: string, tryToDelete: boolean = false): str
       try {
         fs.removeSync(currentPath);
         deleted = true;
-        console.log(`Deleted file: ${currentPath}`);  
+        console.log(`Deleted file: ${currentPath}`);
       } catch (err) {
-        console.log(`File is in use: ${currentPath}`);  
+        console.log(`File is in use: ${currentPath}`);
       }
     }
 
-    if (!deleted) {      
+    if (!deleted) {
       ++suffix;
-      
+
       if (parsedPath == null) {
-        parsedPath = path.parse(originalPath);      
+        parsedPath = path.parse(originalPath);
       }
-      
+
       currentPath = path.join(parsedPath.dir, `${parsedPath.name}.${suffix}${parsedPath.ext}`);
     }
   }
@@ -493,7 +518,7 @@ function generateTemplateFile(application: string, type: string, id: string, ver
       const webExtensionPath = applicationProperties[application][type].webExtensionPath;
       const extension = path.extname(defaultTemplateName);
       const templatePath = makePathUnique(path.join(os.tmpdir(), `${application} add-in ${id}${extension}`), true);
-  
+
       fs.ensureDirSync(path.dirname(templatePath));
 
       console.log(`Generating file ${templatePath}`);
@@ -509,7 +534,7 @@ function generateTemplateFile(application: string, type: string, id: string, ver
       zip.file(webExtensionPath, webExtensionXml);
 
       // Write the file
-      zip.generateNodeStream({type: 'nodebuffer', streamFiles: true})
+      zip.generateNodeStream({ type: 'nodebuffer', streamFiles: true })
         .pipe(fs.createWriteStream(templatePath))
         .on('finish', () => {
           resolve(templatePath);

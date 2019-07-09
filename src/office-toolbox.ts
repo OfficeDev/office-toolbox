@@ -250,6 +250,7 @@ async function sideload(application: string, manifestPath: string) {
 
 async function remove(application: string, manifestPath: string) {
   try {
+    let manifestSelected = false;
     if (process.platform === 'win32') {
       application = null;
     }
@@ -260,9 +261,10 @@ async function remove(application: string, manifestPath: string) {
 
     if (!manifestPath) {
       manifestPath = await promptForManifestFromListOfRegisteredManifests(application);
+      manifestSelected = true;
     }
 
-    util.remove(application, manifestPath);
+    util.remove(application, manifestPath, manifestSelected);
   } catch (err) {
     logRejection(err);
   }

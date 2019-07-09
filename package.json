@@ -8,6 +8,7 @@
     "tsc-watch": "tsc -p tsconfig.json -w",
     "build": "rimraf app && concurrently \"npm run tsc\"",
     "start": "rimraf app && concurrently \"npm run tsc-watch\"",
+    "test": "mocha -r ts-node/register test/*.ts",
     "run": "office-toolbox"
   },
   "keywords": [
@@ -23,7 +24,7 @@
     "templates"
   ],
   "dependencies": {
-    "applicationinsights": "^1.0.3",
+    "applicationinsights": "^1.4.0",
     "chalk": "^2.4.1",
     "commander": "^2.19.0",
     "fs-extra": "^3.0.1",
@@ -38,11 +39,14 @@
   "devDependencies": {
     "@types/applicationinsights": "^0.20.0",
     "@types/jszip": "^3.1.4",
+    "@types/mocha": "^5.2.7",
     "@types/node-powershell": "^3.1.0",
+    "@types/node": "^12.0.10",
     "@types/xml2js": "^0.4.3",
     "concurrently": "^3.5.0",
+    "mocha": "^6.1.4",
     "rimraf": "^2.6.1",
-    "ts-node": "^7.0.1",
+    "ts-node": "^8.3.0",
     "typescript": "^3.2.2"
   },
   "repository": {

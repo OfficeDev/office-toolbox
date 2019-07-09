@@ -10,7 +10,6 @@
         "newLine": "LF",
         "noImplicitAny": false,
         "noEmitOnError": true,
-        "rootDir": "src",
         "outDir": "app",
         "lib": [
             "dom",
@@ -18,6 +17,7 @@
         ]
     },
     "exclude": [
-        "node_modules"
+        "node_modules",
+        "test"
     ]
 }
