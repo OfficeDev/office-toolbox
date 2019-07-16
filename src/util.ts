@@ -100,9 +100,9 @@ export function getManifests(application: string): Promise<string[]> {
     : getManifestsFromSideloadingDirectory(application);
 }
 
-export function addManifest(application: string, manifestPath: string): Promise<any> {
+export function addManifest(application: string, parsedGuid: string, manifestPath: string): Promise<any> {
   return (process.platform === 'win32')
-    ? addManifestToRegistry(manifestPath)
+    ? addManifestToRegistry(parsedGuid, manifestPath)
     : addManifestToSideloadingDirectory(application, manifestPath);
 }
 
@@ -250,8 +250,8 @@ function querySideloadingRegistry(commands: string[]): Promise<string> {
   });
 }
 
-function addManifestToRegistry(manifestPath: string): Promise<any> {
-  return querySideloadingRegistry(['Set-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestPath + '" -Value "' + manifestPath + '"']);
+function addManifestToRegistry(parsedGuid: string, manifestPath: string): Promise<any> {
+  return querySideloadingRegistry(['Set-ItemProperty -LiteralPath $RegistryPath -Name "' + parsedGuid + '" -Value "' + manifestPath + '"']);
 }
 
 export function getManifestsFromRegistry(): Promise<string[]> {
@@ -307,7 +307,7 @@ function sideloadManifest(application: string, manifestPath: string): Promise<an
       }
 
       const [parsedType, parsedGuid, parsedVersion] = await parseManifest(manifestPath);
-      await addManifest(application, manifestPath);
+      await addManifest(application, parsedGuid, manifestPath);
       const templateFile = await generateTemplateFile(application, parsedType, parsedGuid, parsedVersion);
 
       appInsightsClient.trackEvent({ name: 'open', properties: { guid: parsedGuid, version: parsedVersion } });
