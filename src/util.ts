@@ -100,9 +100,9 @@ export function getManifests(application: string): Promise<string[]> {
     : getManifestsFromSideloadingDirectory(application);
 }
 
-export function addManifest(application: string, parsedGuid: string, manifestPath: string): Promise<any> {
+export function addManifest(application: string, manifestId: string, manifestPath: string): Promise<any> {
   return (process.platform === 'win32')
-    ? addManifestToRegistry(parsedGuid, manifestPath)
+    ? addManifestToRegistry(manifestId, manifestPath)
     : addManifestToSideloadingDirectory(application, manifestPath);
 }
 
@@ -250,8 +250,8 @@ function querySideloadingRegistry(commands: string[]): Promise<string> {
   });
 }
 
-function addManifestToRegistry(parsedGuid: string, manifestPath: string): Promise<any> {
-  return querySideloadingRegistry(['Set-ItemProperty -LiteralPath $RegistryPath -Name "' + parsedGuid + '" -Value "' + manifestPath + '"']);
+function addManifestToRegistry(manifestId: string, manifestPath: string): Promise<any> {
+  return querySideloadingRegistry(['Set-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestId + '" -Value "' + manifestPath + '"']);
 }
 
 export function getManifestsFromRegistry(): Promise<string[]> {
