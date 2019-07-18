@@ -1,3 +1,13 @@
+---
+topic: sample
+products:
+- office-365
+languages:
+- typescript
+extensions:
+  contentType: tools
+  createdDate: 7/13/2017 1:13:10 PM
+---
 
 # office-toolbox
 
