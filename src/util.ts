@@ -267,9 +267,8 @@ export function getManifestsFromRegistry(): Promise<string[]> {
       let manifestPaths = [];
 
       for (const name in registryJSON) {
-        // Manifests are inserted in the registry with matching name and value
-        if (registryJSON[name].toString().toLowerCase() === name.toString().toLowerCase()) {
-          manifestPaths.push(name);
+        if (!name.startsWith("PS")) {
+          manifestPaths.push(registryJSON[name]);
         }
       }
 
@@ -287,7 +286,14 @@ function removeManifestFromRegistry(manifestPath: string): Promise<any> {
     });
   }
   console.log(`Removing ${manifestPath}`);
-  return querySideloadingRegistry(['Remove-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestPath + '" -ErrorAction SilentlyContinue']);
+  return new Promise(async (resolve, reject) => {
+    try {
+      const [parsedType, parsedGuid, parsedVersion] = await parseManifest(manifestPath);
+      resolve(await querySideloadingRegistry(['Remove-ItemProperty -LiteralPath $RegistryPath -Name "' + parsedGuid + '" -ErrorAction SilentlyContinue']));
+    } catch (err) {
+      reject(err);
+    }
+  });
 }
 
 // GENERIC HELPER FUNCTIONS //
