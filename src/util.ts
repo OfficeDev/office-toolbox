@@ -250,26 +250,30 @@ function querySideloadingRegistry(commands: string[]): Promise<string> {
   });
 }
 
-function addManifestToRegistry(manifestId: string, manifestPath: string): Promise<any> {
-  return querySideloadingRegistry(['Set-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestId + '" -Value "' + manifestPath + '"']);
+async function addManifestToRegistry(manifestId: string, manifestPath: string): Promise<any> {
+  await querySideloadingRegistry(['Remove-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestPath + '" -ErrorAction SilentlyContinue']);
+  return await querySideloadingRegistry(['Set-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestId + '" -Value "' + manifestPath + '"']);
 }
 
 export function getManifestsFromRegistry(): Promise<string[]> {
   return new Promise(async (resolve, reject) => {
     try {
-      const registryOutput = await querySideloadingRegistry(['Get-ItemProperty -LiteralPath $RegistryPath | ConvertTo-Json -Compress']);
+      // NameAndValueOutput would contain some Powershell property, like PSPath, PSDrive.
+      // So we have to call another command to get registry names only.
+      const registryNameOnlyOutput = await querySideloadingRegistry(['Get-Item -Path $RegistryPath | Select-Object -ExpandProperty Property | ConvertTo-Json -Compress']);
+      const registryNameAndValueOutput = await querySideloadingRegistry(['Get-ItemProperty -LiteralPath $RegistryPath | ConvertTo-Json -Compress']);
 
-      if (!registryOutput || registryOutput.indexOf('{') === -1) {
+      if (!registryNameAndValueOutput || registryNameAndValueOutput.indexOf('{') === -1 || !registryNameOnlyOutput) {
         resolve([]);
       }
 
-      const registryJSON = JSON.parse(registryOutput);
+      // if there is a single line of output, the output type is string, otherwise is array of strings.
+      const NameArray = registryNameOnlyOutput.indexOf('[') === -1 ? [JSON.parse(registryNameOnlyOutput)] : JSON.parse(registryNameOnlyOutput);
+      const NameAndValueDictionary = JSON.parse(registryNameAndValueOutput);
       let manifestPaths = [];
 
-      for (const name in registryJSON) {
-        if (!name.startsWith("PS")) {
-          manifestPaths.push(registryJSON[name]);
-        }
+      for (const name of NameArray) {
+        manifestPaths.push(NameAndValueDictionary[name]);
       }
 
       resolve(manifestPaths);
@@ -279,21 +283,16 @@ export function getManifestsFromRegistry(): Promise<string[]> {
   });
 }
 
-function removeManifestFromRegistry(manifestPath: string): Promise<any> {
+async function removeManifestFromRegistry(manifestPath: string): Promise<any> {
   if (!manifestPath) {
     return new Promise((resolve, reject) => {
       return reject('No manifest was specified');
     });
   }
   console.log(`Removing ${manifestPath}`);
-  return new Promise(async (resolve, reject) => {
-    try {
-      const [parsedType, parsedGuid, parsedVersion] = await parseManifest(manifestPath);
-      resolve(await querySideloadingRegistry(['Remove-ItemProperty -LiteralPath $RegistryPath -Name "' + parsedGuid + '" -ErrorAction SilentlyContinue']));
-    } catch (err) {
-      reject(err);
-    }
-  });
+  const [parsedType, parsedGuid, parsedVersion] = await parseManifest(manifestPath);
+  await querySideloadingRegistry(['Remove-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestPath + '" -ErrorAction SilentlyContinue']);
+  return await querySideloadingRegistry(['Remove-ItemProperty -LiteralPath $RegistryPath -Name "' + parsedGuid + '" -ErrorAction SilentlyContinue']);
 }
 
 // GENERIC HELPER FUNCTIONS //
