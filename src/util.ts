@@ -251,6 +251,8 @@ function querySideloadingRegistry(commands: string[]): Promise<string> {
 }
 
 async function addManifestToRegistry(manifestId: string, manifestPath: string): Promise<any> {
+  // For legacy version of Office-toolbox, the registry value name is also manifest path. 
+  // In the case that migrate from legacy version to current, we need to make sure legacy value is removed.
   await querySideloadingRegistry(['Remove-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestPath + '" -ErrorAction SilentlyContinue']);
   return await querySideloadingRegistry(['Set-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestId + '" -Value "' + manifestPath + '"']);
 }
@@ -268,12 +270,13 @@ export function getManifestsFromRegistry(): Promise<string[]> {
       }
 
       // if there is a single line of output, the output type is string, otherwise is array of strings.
-      const NameArray = registryNameOnlyOutput.indexOf('[') === -1 ? [JSON.parse(registryNameOnlyOutput)] : JSON.parse(registryNameOnlyOutput);
-      const NameAndValueDictionary = JSON.parse(registryNameAndValueOutput);
+      const nameJson = JSON.parse(registryNameOnlyOutput);
+      const nameArray = registryNameOnlyOutput.indexOf('[') === -1 ? [nameJson] : nameJson;
+      const nameAndValueDictionary = JSON.parse(registryNameAndValueOutput);
       let manifestPaths = [];
 
-      for (const name of NameArray) {
-        manifestPaths.push(NameAndValueDictionary[name]);
+      for (const name of nameArray) {
+        manifestPaths.push(nameAndValueDictionary[name]);
       }
 
       resolve(manifestPaths);
@@ -285,11 +288,12 @@ export function getManifestsFromRegistry(): Promise<string[]> {
 
 async function removeManifestFromRegistry(manifestPath: string): Promise<any> {
   if (!manifestPath) {
-    return new Promise((resolve, reject) => {
-      return reject('No manifest was specified');
-    });
+    throw new Error('No manifest was specified');
   }
+
   console.log(`Removing ${manifestPath}`);
+  // For legacy version of Office-toolbox, the registry value name is also manifest path. 
+  // In the case that migrate from legacy version to current, we need to make sure legacy value is removed too.
   const [parsedType, parsedGuid, parsedVersion] = await parseManifest(manifestPath);
   await querySideloadingRegistry(['Remove-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestPath + '" -ErrorAction SilentlyContinue']);
   return await querySideloadingRegistry(['Remove-ItemProperty -LiteralPath $RegistryPath -Name "' + parsedGuid + '" -ErrorAction SilentlyContinue']);
