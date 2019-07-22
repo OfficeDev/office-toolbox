@@ -400,7 +400,7 @@ function getIdsAndManifests(application: string): Promise<Array<[string, string]
   });
 }
 
-function parseManifest(manifestPath: string): Promise<[string, string, string]> {
+export function parseManifest(manifestPath: string): Promise<[string, string, string]> {
   return new Promise(async (resolve, reject) => {
     try {
       const parser = new xml2js.Parser();

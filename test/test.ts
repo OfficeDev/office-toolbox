@@ -15,7 +15,8 @@ describe("Add manifest", function () {
         let testManifestPath = path.resolve(`${process.cwd()}/test/test-manifest.xml`);
 
         it(process.platform === "win32" ? "Manifest should have been added to the registry" : "Manifest should have been added to the WEF folder and given a unique name", async function () {
-            await officeToolbox.addManifest(application, testManifestPath);
+            const [parsedType, parsedGuid, parsedVersion] = await officeToolbox.parseManifest(testManifestPath);
+            await officeToolbox.addManifest(application, parsedGuid, testManifestPath);
 
             if (process.platform === "win32") {
                 manifests = await officeToolbox.getManifests(application);
