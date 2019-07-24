@@ -100,9 +100,9 @@ export function getManifests(application: string): Promise<string[]> {
     : getManifestsFromSideloadingDirectory(application);
 }
 
-export function addManifest(application: string, manifestPath: string): Promise<any> {
+export function addManifest(application: string, manifestId: string, manifestPath: string): Promise<any> {
   return (process.platform === 'win32')
-    ? addManifestToRegistry(manifestPath)
+    ? addManifestToRegistry(manifestId, manifestPath)
     : addManifestToSideloadingDirectory(application, manifestPath);
 }
 
@@ -250,27 +250,33 @@ function querySideloadingRegistry(commands: string[]): Promise<string> {
   });
 }
 
-function addManifestToRegistry(manifestPath: string): Promise<any> {
-  return querySideloadingRegistry(['Set-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestPath + '" -Value "' + manifestPath + '"']);
+async function addManifestToRegistry(manifestId: string, manifestPath: string): Promise<any> {
+  // For legacy version of Office-toolbox, the registry value name is also manifest path. 
+  // In the case that migrate from legacy version to current, we need to make sure legacy value is removed.
+  await querySideloadingRegistry(['Remove-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestPath + '" -ErrorAction SilentlyContinue']);
+  return await querySideloadingRegistry(['Set-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestId + '" -Value "' + manifestPath + '"']);
 }
 
 export function getManifestsFromRegistry(): Promise<string[]> {
   return new Promise(async (resolve, reject) => {
     try {
-      const registryOutput = await querySideloadingRegistry(['Get-ItemProperty -LiteralPath $RegistryPath | ConvertTo-Json -Compress']);
+      // NameAndValueOutput would contain some Powershell property, like PSPath, PSDrive.
+      // So we have to call another command to get registry names only.
+      const registryNameOnlyOutput = await querySideloadingRegistry(['Get-Item -Path $RegistryPath | Select-Object -ExpandProperty Property | ConvertTo-Json -Compress']);
+      const registryNameAndValueOutput = await querySideloadingRegistry(['Get-ItemProperty -LiteralPath $RegistryPath | ConvertTo-Json -Compress']);
 
-      if (!registryOutput || registryOutput.indexOf('{') === -1) {
+      if (!registryNameAndValueOutput || registryNameAndValueOutput.indexOf('{') === -1 || !registryNameOnlyOutput) {
         resolve([]);
       }
 
-      const registryJSON = JSON.parse(registryOutput);
+      // if there is a single line of output, the output type is string, otherwise is array of strings.
+      const nameJson = JSON.parse(registryNameOnlyOutput);
+      const nameArray = registryNameOnlyOutput.indexOf('[') === -1 ? [nameJson] : nameJson;
+      const nameAndValueDictionary = JSON.parse(registryNameAndValueOutput);
       let manifestPaths = [];
 
-      for (const name in registryJSON) {
-        // Manifests are inserted in the registry with matching name and value
-        if (registryJSON[name].toString().toLowerCase() === name.toString().toLowerCase()) {
-          manifestPaths.push(name);
-        }
+      for (const name of nameArray) {
+        manifestPaths.push(nameAndValueDictionary[name]);
       }
 
       resolve(manifestPaths);
@@ -280,14 +286,17 @@ export function getManifestsFromRegistry(): Promise<string[]> {
   });
 }
 
-function removeManifestFromRegistry(manifestPath: string): Promise<any> {
+async function removeManifestFromRegistry(manifestPath: string): Promise<any> {
   if (!manifestPath) {
-    return new Promise((resolve, reject) => {
-      return reject('No manifest was specified');
-    });
+    throw new Error('No manifest was specified');
   }
+
   console.log(`Removing ${manifestPath}`);
-  return querySideloadingRegistry(['Remove-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestPath + '" -ErrorAction SilentlyContinue']);
+  // For legacy version of Office-toolbox, the registry value name is also manifest path. 
+  // In the case that migrate from legacy version to current, we need to make sure legacy value is removed too.
+  const [parsedType, parsedGuid, parsedVersion] = await parseManifest(manifestPath);
+  await querySideloadingRegistry(['Remove-ItemProperty -LiteralPath $RegistryPath -Name "' + manifestPath + '" -ErrorAction SilentlyContinue']);
+  return await querySideloadingRegistry(['Remove-ItemProperty -LiteralPath $RegistryPath -Name "' + parsedGuid + '" -ErrorAction SilentlyContinue']);
 }
 
 // GENERIC HELPER FUNCTIONS //
@@ -307,7 +316,7 @@ function sideloadManifest(application: string, manifestPath: string): Promise<an
       }
 
       const [parsedType, parsedGuid, parsedVersion] = await parseManifest(manifestPath);
-      await addManifest(application, manifestPath);
+      await addManifest(application, parsedGuid, manifestPath);
       const templateFile = await generateTemplateFile(application, parsedType, parsedGuid, parsedVersion);
 
       appInsightsClient.trackEvent({ name: 'open', properties: { guid: parsedGuid, version: parsedVersion } });
@@ -395,7 +404,7 @@ function getIdsAndManifests(application: string): Promise<Array<[string, string]
   });
 }
 
-function parseManifest(manifestPath: string): Promise<[string, string, string]> {
+export function parseManifest(manifestPath: string): Promise<[string, string, string]> {
   return new Promise(async (resolve, reject) => {
     try {
       const parser = new xml2js.Parser();
